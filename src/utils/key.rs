@@ -1,3 +1,4 @@
+#[allow(unused)]
 use ed25519_dalek::SigningKey;
 use rand::TryRngCore;
 use rand::rngs::OsRng;
@@ -37,7 +38,7 @@ fn get_key() -> SigningKey {
     SigningKey::from_bytes(&key_bytes)
 }
 
-pub fn init_key() -> Result<SigningKey> {
+fn init_key() -> Result<SigningKey> {
     let config_dir = get_config_dir();
     if !config_dir.exists() {
         fs::create_dir_all(&config_dir)?;

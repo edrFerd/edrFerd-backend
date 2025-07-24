@@ -1,6 +1,5 @@
 use crate::static_server::server;
 
-mod core;
 mod logger;
 mod static_server;
 mod utils;

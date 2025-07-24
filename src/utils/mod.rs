@@ -1,2 +1,3 @@
 pub mod data_struct;
-pub mod key_manager;
+pub mod key;
+mod core;

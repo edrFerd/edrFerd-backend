@@ -1,5 +1,7 @@
+use crate::utils::key::get_pubkey;
 use blake3::Hash;
 use chrono::{NaiveTime, Utc};
+use ed25519_dalek::{SigningKey, VerifyingKey};
 
 /// 一个块
 pub struct Chunk {
@@ -12,7 +14,7 @@ pub struct Chunk {
     /// 当前的时间戳
     timestamp: NaiveTime,
     /// 公钥
-    pubkey: PubKey,
+    pubkey: VerifyingKey,
     /// 工作量证明
     pow: Pow,
     /// 签名
@@ -20,13 +22,13 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(prev_hash: Hash, explanation: Block, pubkey: PubKey) -> Self {
+    pub fn new(prev_hash: Hash, explanation: Block) -> Self {
         Chunk {
             version: crate::VERSION.to_string(),
             prev_hash,
             explanation,
             timestamp: Utc::now().time(),
-            pubkey,
+            pubkey: get_pubkey().verifying_key(),
             pow: Pow {},
             sign: String::new(),
         }
@@ -34,10 +36,6 @@ impl Chunk {
 }
 /// 工作量证明
 pub struct Pow {}
-/// 公钥
-pub struct PubKey {
-    key: String,
-}
 /// 要声明的方块
 pub struct Block {
     point: Point,
