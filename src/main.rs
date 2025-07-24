@@ -1,6 +1,6 @@
 // use crate::libs::core::work_loop;
 use crate::libs::static_server::server;
-use tokio::join;
+use tokio::{join, sync::oneshot};
 
 mod libs;
 mod logger;
@@ -17,6 +17,10 @@ async fn main() {
     //     log::error!("退出的时候出现了错误{e}");
     // }
 
+    let (send, recv) = oneshot::channel();
+
+    send
+    
     tokio::signal::ctrl_c().await.ok();
 
     log::info!("服务关闭");
