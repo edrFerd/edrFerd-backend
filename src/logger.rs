@@ -1,11 +1,13 @@
 use flexi_logger::{Logger, colored_detailed_format};
+use log::info;
 
 pub fn init_logger() {
     Logger::try_with_str("trace") // 设置默认日志级别为 info
         .unwrap()
         .format(colored_detailed_format) // 使用带颜色的详细格式
         .start()
-        .expect("Failed to initialize logger");
+        .expect("日志初始化失败");
+    info!("日志已初始化")
     // 还不需要的rotate
     // .log_to_file(FileSpec::default().directory("logs")) // 将日志写入 "logs" 目录下的文件
     // .duplicate_to_stderr(Duplicate::All) // 同时将所有日志输出到控制台

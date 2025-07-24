@@ -1,3 +1,4 @@
+use crate::GLOBAL_SOCKET;
 use crate::libs::data_struct::{Block, Chunk, ChunkData};
 use chrono;
 use log::{error, info};
@@ -7,7 +8,7 @@ use tokio::net::UdpSocket;
 // 工作循环
 pub async fn receive_loop() -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
-    let sock = UdpSocket::bind("0.0.0.0:8080").await?;
+    let sock = GLOBAL_SOCKET.get().unwrap();
     info!("Listening on: {}", sock.local_addr()?);
 
     let mut buf = [0; 1024];
@@ -48,8 +49,6 @@ pub fn send_explanation(block: Block, difficult: u32) {
         "random_salt".parse().unwrap(),
     );
     let chunk = Chunk::new(chunk_data);
-    let json_str:String = serde_json::to_string(&chunk).unwrap();
+    let json_str: String = serde_json::to_string(&chunk).unwrap();
     let socket = UdpSocket::bind("0.0.0.0:8080");
-    
-   
 }
