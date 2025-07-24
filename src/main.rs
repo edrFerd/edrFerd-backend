@@ -33,4 +33,5 @@ async fn async_main() -> anyhow::Result<()> {
     waiter.await;
 
     log::info!("服务关闭");
+    Ok(())
 }
