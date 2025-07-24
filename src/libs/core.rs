@@ -1,10 +1,10 @@
-#[allow(unused)]
-use std::borrow::Cow;
-use crate::libs::data_struct::{Block, Chunk, ChunkData, InitBroadcast};
 use crate::GLOBAL_SOCKET;
+use crate::libs::data_struct::{Block, Chunk, ChunkData, InitBroadcast};
 use chrono;
 use chrono::TimeDelta;
 use log::{debug, error, info, warn};
+#[allow(unused)]
+use std::borrow::Cow;
 
 // 工作循环
 pub async fn receive_loop() -> anyhow::Result<()> {
@@ -38,13 +38,11 @@ fn process_pack(data: Cow<str>) {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
             if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
-                
             } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
-
             }
         }
         Err(e) => {
-            warn!("aaaaaaaaaaa???");
+            warn!("aaaaaaaaaaa???,{e}");
         }
     }
 }
@@ -91,7 +89,7 @@ pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()
         "unimpled_hash".parse()?,
         block,
         "random_salt".parse()?,
-        114514
+        114514,
     );
     let chunk = Chunk::new(chunk_data);
     let json_str: String = serde_json::to_string(&chunk)?;
