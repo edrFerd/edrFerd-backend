@@ -21,7 +21,8 @@ fn main() -> anyhow::Result<()> {
 
 async fn async_main() -> anyhow::Result<()> {
     log::info!("服务启动");
-    let socket = UdpSocket::bind("0.0.0.0:0").await?;
+    let mut socket = UdpSocket::bind("0.0.0.0:0").await?;
+    socket.set_broadcast(true);
     GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
     let (send, recv) = oneshot::channel();
 

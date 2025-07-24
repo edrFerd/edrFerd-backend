@@ -40,7 +40,7 @@ pub async fn receive_loop() -> anyhow::Result<()> {
     }
 }
 
-pub fn send_explanation(block: Block, difficult: u32) {
+pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()> {
     // TODO hash
     // TODO Salt
     let chunk_data = ChunkData::new(
@@ -50,5 +50,9 @@ pub fn send_explanation(block: Block, difficult: u32) {
     );
     let chunk = Chunk::new(chunk_data);
     let json_str: String = serde_json::to_string(&chunk).unwrap();
-    let socket = UdpSocket::bind("0.0.0.0:8080");
+    let socket = GLOBAL_SOCKET.get().unwrap();
+    socket
+        .send_to(json_str.as_bytes(), "255.255.255.255:8080")
+        .await?;
+    Ok(())
 }
