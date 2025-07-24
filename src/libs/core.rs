@@ -42,9 +42,14 @@ pub async fn receive_loop() -> anyhow::Result<()> {
 pub fn send_explanation(block: Block, difficult: u32) {
     // TODO hash
     // TODO Salt
-    let chunk = ChunkData::new(
+    let chunk_data = ChunkData::new(
         "unimpled_hash".parse().unwrap(),
         block,
         "random_salt".parse().unwrap(),
     );
+    let chunk = Chunk::new(chunk_data);
+    let json_str:String = serde_json::to_string(&chunk).unwrap();
+    let socket = UdpSocket::bind("0.0.0.0:8080");
+    
+   
 }
