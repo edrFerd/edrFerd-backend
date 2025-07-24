@@ -4,9 +4,10 @@ use std::{hash::Hash, io::Write};
 use crate::libs::key::get_key;
 use blake3::Hash as BlakeHash;
 use chrono::{NaiveTime, Utc};
-use ed25519_dalek::{Signature, VerifyingKey};
+use ed25519_dalek::{ed25519::signature::SignerMut, Signature, SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Chunk {
     sign: Signature,
     pow: BlakeHash,
@@ -16,16 +17,29 @@ pub struct Chunk {
 impl Chunk {
     pub fn verify(&self) -> bool {
         let key = self.data.pub_key.clone();
-        let hash = {
-            let mut hasher = blake3::Hasher::new();
-            hasher.update(self.pow.as_bytes());
-            let jsoned = serde_json::to_string(&self.data).expect("wtf");
-            hasher.update(jsoned.as_bytes());
-            hasher.finalize()
-        };
+        let hash = Self::hash_data(&self.pow, data)
         key.verify_strict(hash.as_bytes(), &self.sign)
             .ok()
             .is_some()
+    }
+    fn hash_data(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(pow.as_bytes());
+        let jsoned = serde_json::to_string(data).expect("wtf");
+        hasher.update(jsoned.as_bytes());
+        hasher.finalize()
+    }
+
+    pub fn new(data:ChunkData) -> Self {
+        let key = get_key();
+        let pow = data.pow();
+
+        let sign = key.sign(msg)
+        Chunk{
+            sign,
+            pow,
+            data,
+        }
     }
 }
 
