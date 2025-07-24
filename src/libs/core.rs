@@ -11,7 +11,7 @@ pub async fn receive_loop() -> anyhow::Result<()> {
     let sock = GLOBAL_SOCKET.get().unwrap();
     info!("Listening on: {}", sock.local_addr()?);
 
-    let mut buf = [0; 1024];
+    let mut buf = [0; 114514]; // temp only
 
     loop {
         match sock.recv_from(&mut buf).await {

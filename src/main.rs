@@ -21,17 +21,17 @@ fn main() -> anyhow::Result<()> {
 
 async fn async_main() -> anyhow::Result<()> {
     log::info!("服务启动");
-    let mut socket = UdpSocket::bind("0.0.0.0:0").await?;
-    socket.set_broadcast(true);
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
+    socket.set_broadcast(true)?;
     GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
     let (send, recv) = oneshot::channel();
 
     let waiter = tokio::spawn(libs::static_server::web_main(recv));
 
     tokio::signal::ctrl_c().await.ok();
-    send.send(());
+    send.send(())?;
 
-    waiter.await;
+    waiter.await?;
 
     log::info!("服务关闭");
     Ok(())
