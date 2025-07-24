@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Chunk {
-    sign: Signature,
-    pow: BlakeHash,
-    data: ChunkData,
+    pub sign: Signature,
+    pub pow: BlakeHash,
+    pub data: ChunkData,
 }
 
 impl Chunk {
@@ -38,6 +38,7 @@ impl Chunk {
         let sign = key.sign(hash.as_bytes());
         Chunk { sign, pow, data }
     }
+
 }
 
 /// 一个块
