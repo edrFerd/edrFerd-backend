@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use crate::libs::key::get_key;
 use blake3::Hash;
 use chrono::{NaiveTime, Utc};

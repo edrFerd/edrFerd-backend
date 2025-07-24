@@ -1,4 +1,4 @@
-use flexi_logger::{Criterion, Duplicate, FileSpec, Logger, Naming, colored_detailed_format};
+use flexi_logger::{colored_detailed_format, Logger};
 
 pub fn init_logger() {
     Logger::try_with_str("trace") // 设置默认日志级别为 info
