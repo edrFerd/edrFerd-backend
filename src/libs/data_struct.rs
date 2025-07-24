@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use std::{hash::Hash, io::Write};
 
 #[allow(dead_code)]
 use crate::libs::key::get_key;
@@ -15,7 +15,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn verify(&self) -> bool {
-        let key = self.data.pubkey.clone();
+        let key = self.data.pub_key.clone();
         let hash = {
             let mut hasher = blake3::Hasher::new();
             hasher.update(self.pow.as_bytes());
@@ -41,7 +41,7 @@ pub struct ChunkData {
     /// 当前的时间戳
     timestamp: NaiveTime,
     /// 公钥
-    pubkey: VerifyingKey,
+    pub_key: VerifyingKey,
     /// 盐
     salt: String, //来自injective区块链
 }
@@ -54,13 +54,16 @@ impl ChunkData {
             prev_hash,
             explanation,
             timestamp: Utc::now().time(),
-            pubkey,
+            pub_key: pubkey,
             salt,
         }
     }
 
     pub fn pow(&self) -> BlakeHash {
         let jsoned = serde_json::to_string(&self).expect("wtf");
+        let mut hasher = blake3::Hasher::new();
+        hasher.write_all(jsoned.as_bytes());
+        hasher.finalize()
     }
 }
 

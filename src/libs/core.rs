@@ -47,5 +47,4 @@ pub fn send_explanation(block: Block, difficult: u32) {
         block,
         "random_salt".parse().unwrap(),
     );
-    
 }
