@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::libs::data_struct::{Block, Chunk, ChunkData};
 use crate::GLOBAL_SOCKET;
 use chrono;
@@ -22,14 +23,6 @@ pub async fn receive_loop() -> anyhow::Result<()> {
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
                 info!("从 {addr} 接收到数据: {received_data}");
-                // if let Ok(parsed_json) = serde_json::from_str::<Value>(&received_data) {
-                //     info!("接收到有效的 JSON 数据: {parsed_json}");
-                // } else {
-                //     log::warn!(
-                //         "接收到一个不能被反序列化为 json 的 udp 包\n来自: {addr} len: {len} e:{e}"
-                //     );
-                //     continue;
-                // }
             }
             Err(e) => {
                 error!("接收到数据失败: {e}");
@@ -37,7 +30,21 @@ pub async fn receive_loop() -> anyhow::Result<()> {
         }
     }
 }
-fn handle_receive_pack(chunk: Chunk) -> anyhow::Result<()> {
+
+fn process_pack(data: Cow<str>) {
+    match serde_json::from_str::<serde_json::Value>(&data) {
+        Ok(data) => {
+        }
+        Err(e) => {
+
+                // log::warn!(
+                //     "接收到一个不能被反序列化为 json 的 udp 包\n来自: {addr} len: {len} e:{e}"
+                // );
+        }
+    }
+}
+
+fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     // 检查时间差是否在2分钟（120秒）内
     let current_timestamp = chrono::Utc::now().time();
     let chunk_time = chunk.data.timestamp;
@@ -57,7 +64,19 @@ fn handle_receive_pack(chunk: Chunk) -> anyhow::Result<()> {
     debug!("时间戳验证通过：时间差为 {:?}", time_diff);
 
     // 验证签名
+    let is_verify_available = chunk.verify_sign();
+    if !is_verify_available {
+        warn!("签名验证不通过");
+        return Ok(());
+    }
     // 验证PoW
+    let is_pow_available = chunk.verify_pow();
+    if !is_pow_available {
+        warn!("pow验证不通过");
+        return Ok(());
+    }
+    // 验证没问题，现在需要修改方块列表了
+
     Ok(())
 }
 pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()> {
@@ -67,6 +86,7 @@ pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()
         "unimpled_hash".parse()?,
         block,
         "random_salt".parse()?,
+        114514
     );
     let chunk = Chunk::new(chunk_data);
     let json_str: String = serde_json::to_string(&chunk)?;
