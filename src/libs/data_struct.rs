@@ -62,7 +62,7 @@ pub struct ChunkData {
     /// 盐
     salt_from_chunks: String, //来自injective区块链
     /// 真正的盐
-    this_is_rand: u64
+    this_is_rand: u64,
 }
 
 impl ChunkData {
@@ -75,7 +75,7 @@ impl ChunkData {
             timestamp: Utc::now().time(),
             pub_key: pubkey,
             salt_from_chunks: salt,
-            this_is_rand: rand
+            this_is_rand: rand,
         }
     }
 
@@ -90,18 +90,21 @@ impl ChunkData {
 /// 要声明的方块
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct Block {
-    point: Point,
-    block_appearance: BlockAppearance,
+    point: BlockPoint,
+    block_appearance: BlockInfo,
 }
 /// 目标的节点
 #[derive(Debug, Hash, Deserialize, Serialize)]
-pub struct Point {
+pub struct BlockPoint {
     x: i64,
     y: i64,
     z: i64,
 }
-/// 方块外观
-#[derive(Debug, Hash, Deserialize, Serialize)]
-pub struct BlockAppearance {
+/// 方块所属的信息
+#[derive(Debug, Deserialize, Serialize, Hash)]
+pub struct BlockInfo {
     type_id: String,
 }
+
+#[derive(Debug, Hash, Deserialize, Serialize)]
+pub struct InitBroadcast {}

@@ -1,7 +1,9 @@
+#[allow(unused)]
 use std::borrow::Cow;
-use crate::libs::data_struct::{Block, Chunk, ChunkData};
+use crate::libs::data_struct::{Block, Chunk, ChunkData, InitBroadcast};
 use crate::GLOBAL_SOCKET;
 use chrono;
+use chrono::TimeDelta;
 use log::{debug, error, info, warn};
 
 // 工作循环
@@ -23,6 +25,7 @@ pub async fn receive_loop() -> anyhow::Result<()> {
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
                 info!("从 {addr} 接收到数据: {received_data}");
+                process_pack(received_data);
             }
             Err(e) => {
                 error!("接收到数据失败: {e}");
@@ -34,12 +37,14 @@ pub async fn receive_loop() -> anyhow::Result<()> {
 fn process_pack(data: Cow<str>) {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
+            if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
+                
+            } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
+
+            }
         }
         Err(e) => {
-
-                // log::warn!(
-                //     "接收到一个不能被反序列化为 json 的 udp 包\n来自: {addr} len: {len} e:{e}"
-                // );
+            warn!("aaaaaaaaaaa???");
         }
     }
 }
@@ -53,8 +58,8 @@ fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     } else {
         current_timestamp - chunk_time
     };
-    let two_minutes = chrono::Duration::minutes(2);
-    if time_diff > two_minutes {
+    const TWO_MINUTES: TimeDelta = chrono::Duration::minutes(2);
+    if time_diff > TWO_MINUTES {
         warn!(
             "时间戳验证失败：chunk时间 {:?} 与当前时间 {:?} 相差超过2分钟",
             chunk_time, current_timestamp
