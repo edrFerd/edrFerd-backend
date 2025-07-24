@@ -10,5 +10,9 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[tokio::main]
 async fn main() {
     logger::init_logger();
+    
+    // 初始化密钥管理器
+
+    
     server().await;
 }
