@@ -1,7 +1,7 @@
 use crate::utils::key::get_pubkey;
 use blake3::Hash;
 use chrono::{NaiveTime, Utc};
-use ed25519_dalek::{SigningKey, VerifyingKey};
+use ed25519_dalek::VerifyingKey;
 
 /// 一个块
 pub struct Chunk {
