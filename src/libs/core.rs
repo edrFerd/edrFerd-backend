@@ -1,3 +1,4 @@
+use crate::libs::data_struct::{Block, Chunk, ChunkData};
 use chrono;
 use log::{error, info};
 use serde_json::{Value, json};
@@ -38,6 +39,13 @@ pub async fn receive_loop() -> anyhow::Result<()> {
     }
 }
 
-pub async fn send_explanation() {
-    todo!("实现发送解释功能")
+pub fn send_explanation(block: Block, difficult: u32) {
+    // TODO hash
+    // TODO Salt
+    let chunk = ChunkData::new(
+        "unimpled_hash".parse().unwrap(),
+        block,
+        "random_salt".parse().unwrap(),
+    );
+    
 }

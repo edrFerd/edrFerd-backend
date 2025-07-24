@@ -19,8 +19,6 @@ async fn main() {
 
     let (send, recv) = oneshot::channel();
 
-    send
-    
     tokio::signal::ctrl_c().await.ok();
 
     log::info!("服务关闭");
