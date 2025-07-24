@@ -1,4 +1,4 @@
-use flexi_logger::{colored_detailed_format, Logger};
+use flexi_logger::{Logger, colored_detailed_format};
 
 pub fn init_logger() {
     Logger::try_with_str("trace") // 设置默认日志级别为 info

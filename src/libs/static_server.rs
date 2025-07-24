@@ -1,6 +1,7 @@
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
+use tokio::sync::oneshot::Receiver;
 
 use std::net::SocketAddr;
 
@@ -21,11 +22,10 @@ pub async fn server() -> Result<()> {
     Ok(())
 }
 
-pub async fn web_main() -> Result<tokio::task::JoinHandle<Result<()>>> {
+pub async fn web_main(stop_reciver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {
     let task = tokio::spawn(server());
-
+    stop_reciver.await?;
     Ok(task)
-
 }
 
 async fn pubkey() -> Json<[u8; 32]> {

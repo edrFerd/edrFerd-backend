@@ -1,6 +1,6 @@
 use chrono;
 use log::{error, info};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::net::UdpSocket;
 
 // 工作循环
@@ -22,10 +22,12 @@ pub async fn receive_loop() -> anyhow::Result<()> {
                 match serde_json::from_str::<Value>(&received_data) {
                     Ok(parsed_json) => {
                         info!("接收到有效的 JSON 数据: {parsed_json}");
-
                     }
                     Err(e) => {
-                        log::warn!("接收到一个不能被反序列化为 json 的 udp 包\n来自: {addr} len: {len}, e:{e}");
+                        log::warn!(
+                            "接收到一个不能被反序列化为 json 的 udp 包\n来自: {addr} len: {len}, e:{e}"
+                        );
+                        continue;
                     }
                 };
             }
@@ -34,4 +36,8 @@ pub async fn receive_loop() -> anyhow::Result<()> {
             }
         }
     }
+}
+
+pub async fn send_explanation() {
+    todo!("实现发送解释功能")
 }
