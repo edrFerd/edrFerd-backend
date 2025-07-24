@@ -51,7 +51,7 @@ pub struct ChunkData {
     /// 对某个方块的解释
     explanation: Block,
     /// 当前的时间戳
-    timestamp: NaiveTime,
+    pub timestamp: NaiveTime,
     /// 公钥
     pub_key: VerifyingKey,
     /// 盐
