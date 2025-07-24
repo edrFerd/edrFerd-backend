@@ -1,6 +1,6 @@
 use log::info;
 
-mod interface;
+mod data_struct;
 mod logger;
 
 fn main() {
