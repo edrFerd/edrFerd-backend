@@ -1,4 +1,4 @@
-use tokio::{sync::oneshot};
+use tokio::sync::oneshot;
 
 mod libs;
 mod logger;
