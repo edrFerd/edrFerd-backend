@@ -2,7 +2,6 @@
 use ed25519_dalek::SigningKey;
 use rand::TryRngCore;
 use rand::rngs::OsRng;
-use std::env::home_dir;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -13,8 +12,7 @@ pub fn get_key() -> SigningKey {
 }
 
 fn get_config_dir() -> PathBuf {
-    let path = home_dir().unwrap().join(".config").join("edrFerd");
-    path
+    PathBuf::from("./config")
 }
 
 use anyhow::Result;
