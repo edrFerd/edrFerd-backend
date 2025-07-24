@@ -4,7 +4,7 @@ use std::{hash::Hash, io::Write};
 use crate::libs::key::get_key;
 use blake3::Hash as BlakeHash;
 use chrono::{NaiveTime, Utc};
-use ed25519_dalek::{ed25519::signature::SignerMut, Signature, SigningKey, VerifyingKey};
+use ed25519_dalek::{ed25519::signature::SignerMut, Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -32,10 +32,10 @@ impl Chunk {
     }
 
     pub fn new(data:ChunkData) -> Self {
-        let key = get_key();
+        let mut key = get_key();
         let pow = data.pow();
-
-        let sign = key.sign()
+        let hash = Self::hash_data(&pow, &data);
+        let sign = key.sign(hash.as_bytes());
         Chunk{
             sign,
             pow,

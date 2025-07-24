@@ -1,6 +1,4 @@
-// use crate::libs::core::work_loop;
-use crate::libs::static_server::server;
-use tokio::{join, sync::oneshot};
+use tokio::{sync::oneshot};
 
 mod libs;
 mod logger;
@@ -19,7 +17,12 @@ async fn main() {
 
     let (send, recv) = oneshot::channel();
 
+    let waiter = tokio::spawn(libs::static_server::web_main(recv));
+
     tokio::signal::ctrl_c().await.ok();
+    send.send(());
+
+    waiter.await;
 
     log::info!("服务关闭");
 }

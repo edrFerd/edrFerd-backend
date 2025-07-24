@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 
 use crate::libs::key::get_key;
 
-pub async fn server() -> Result<()> {
+async fn server() -> Result<()> {
     let app = Router::new()
         .route("/pubkey", get(pubkey))
         .route("/explain", get(explain))
