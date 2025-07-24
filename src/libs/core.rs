@@ -16,7 +16,7 @@ pub async fn work_loop() -> anyhow::Result<()> {
                 // 在这里处理接收到的数据: &buf[..len]
             }
             Err(e) => {
-                error!("Failed to receive datagram: {}", e);
+                error!("接收到数据失败 {}", e);
             }
         }
     }
