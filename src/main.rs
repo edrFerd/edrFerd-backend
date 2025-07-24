@@ -1,9 +1,9 @@
 use crate::static_server::server;
 
 mod core;
-mod data_struct;
 mod logger;
 mod static_server;
+mod utils;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
