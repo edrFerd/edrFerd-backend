@@ -20,7 +20,7 @@ async fn main() {
 
     // 如果 work_loop 因为错误而退出，这里会打印错误信息。
     if let Err(e) = work_loop_result {
-        log::error!("退出的时候出现了错误{}", e);
+        log::error!("退出的时候出现了错误{e}");
     }
 
     log::info!("服务关闭");
