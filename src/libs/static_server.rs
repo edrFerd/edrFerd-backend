@@ -22,7 +22,7 @@ pub async fn server() -> Result<()> {
 }
 
 pub async fn web_main() -> Result<tokio::task::JoinHandle<()>> {
-    let task = tokio::spawn(server);
+    let task = tokio::spawn(server());
 
     Ok(task)
 
