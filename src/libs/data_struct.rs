@@ -1,4 +1,4 @@
-use crate::utils::key::get_pubkey;
+use crate::libs::key::get_key;
 use blake3::Hash;
 use chrono::{NaiveTime, Utc};
 use ed25519_dalek::VerifyingKey;
@@ -28,7 +28,7 @@ impl Chunk {
             prev_hash,
             explanation,
             timestamp: Utc::now().time(),
-            pubkey: get_pubkey().verifying_key(),
+            pubkey: get_key().verifying_key(),
             pow: Pow {},
             sign: String::new(),
         }

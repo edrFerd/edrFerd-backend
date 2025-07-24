@@ -8,8 +8,8 @@ use std::sync::OnceLock;
 
 static PUBKEY: OnceLock<SigningKey> = OnceLock::new();
 
-pub fn get_pubkey() -> SigningKey {
-    PUBKEY.get_or_init(get_key).clone()
+pub fn get_key() -> SigningKey {
+    PUBKEY.get_or_init(get_key_from_file).clone()
 }
 
 fn get_config_dir() -> PathBuf {
@@ -21,7 +21,7 @@ use anyhow::Result;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 
-fn get_key() -> SigningKey {
+fn get_key_from_file() -> SigningKey {
     let config_dir = get_config_dir();
     let key_file_path = config_dir.join("keys.json");
 

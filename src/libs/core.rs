@@ -1,13 +1,8 @@
-use std::io;
-use std::sync::OnceLock;
-use axum::{Router, routing::get};
 use log::{error, info};
-use tokio::net::{TcpSocket, UdpSocket};
-
-const WORK_LOOP_INTERVAL: f64 = 1.0 / 20.0;
+use tokio::net::UdpSocket;
 
 // 工作循环
-async fn work_loop() -> anyhow::Result<()> {
+pub async fn work_loop() -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
     let sock = UdpSocket::bind("0.0.0.0:8080").await?;
     info!("Listening on: {}", sock.local_addr()?);

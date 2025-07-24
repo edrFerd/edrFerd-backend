@@ -1,6 +1,7 @@
-use axum::Router;
+use axum::{Json, Router};
 use axum::routing::get;
 use std::net::SocketAddr;
+use crate::libs::key::get_key;
 
 pub async fn server() {
     let app = Router::new()
@@ -16,8 +17,8 @@ pub async fn server() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn pubkey() -> &'static str {
-    "pubkey"
+async fn pubkey() -> Json<[u8; 32]>{
+    Json(get_key().verifying_key().to_bytes())
 }
 
 async fn explain() -> &'static str {
@@ -25,7 +26,7 @@ async fn explain() -> &'static str {
 }
 
 async fn info() -> &'static str {
-    "info"
+    "我是奶龙"
 }
 
 async fn world() -> &'static str {
