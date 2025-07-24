@@ -58,6 +58,10 @@ impl ChunkData {
             salt,
         }
     }
+
+    pub fn pow(&self) -> BlakeHash {
+        let jsoned = serde_json::to_string(&self).expect("wtf");
+    }
 }
 
 /// 要声明的方块
