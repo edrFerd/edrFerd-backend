@@ -17,11 +17,12 @@ pub struct Chunk {
 impl Chunk {
     pub fn verify(&self) -> bool {
         let key = self.data.pub_key.clone();
-        let hash = Self::hash_data(&self.pow, data)
+        let hash = Self::hash_data(&self.pow, &self.data);
         key.verify_strict(hash.as_bytes(), &self.sign)
             .ok()
             .is_some()
     }
+
     fn hash_data(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
         let mut hasher = blake3::Hasher::new();
         hasher.update(pow.as_bytes());
@@ -34,7 +35,7 @@ impl Chunk {
         let key = get_key();
         let pow = data.pow();
 
-        let sign = key.sign(msg)
+        let sign = key.sign()
         Chunk{
             sign,
             pow,
