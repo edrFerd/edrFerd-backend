@@ -15,6 +15,7 @@ async fn server() -> Result<()> {
 
     let app = Router::new()
         .route("/test_send", get(test_send))
+        .route("/show_world", get(show_world))
         .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 1415));
@@ -23,6 +24,12 @@ async fn server() -> Result<()> {
     info!("正在监听 {addr}作为服务器");
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+pub async fn show_world() -> Json<crate::world::World> {
+    info!("触发 show_world");
+    let world = crate::world::get_world().lock().await;
+    Json(world.clone())
 }
 
 pub async fn test_send() -> String {

@@ -7,13 +7,15 @@ use log::info;
 use std::sync::{LazyLock, OnceLock};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
+use serde::Serialize;
 
 /// 世界地图类型，键为 `BlockPoint`，值为 `BlockInfo`。
 type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfo>;
 
 /// 全局的世界结构，包含世界地图数据。
+#[derive(Debug, Clone, Serialize)]
 pub struct World {
-    world: WorldMapType,
+    pub world: WorldMapType,
 }
 
 /// 全局的 `World` 实例，使用 `OnceLock` 实现懒初始化。
