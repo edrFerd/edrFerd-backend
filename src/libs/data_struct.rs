@@ -17,13 +17,13 @@ pub struct Chunk {
 impl Chunk {
     pub fn verify(&self) -> bool {
         let key = self.data.pub_key.clone();
-        let hash = Self::hash_data(&self.pow, &self.data);
+        let hash = Self::hash_data_for_sign(&self.pow, &self.data);
         key.verify_strict(hash.as_bytes(), &self.sign)
             .ok()
             .is_some()
     }
 
-    fn hash_data(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
+    fn hash_data_for_sign(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
         let mut hasher = blake3::Hasher::new();
         hasher.update(pow.as_bytes());
         let jsoned = serde_json::to_string(data).expect("wtf");
@@ -31,10 +31,14 @@ impl Chunk {
         hasher.finalize()
     }
 
+    pub fn data_hash(&self) -> BlakeHash {
+
+    }
+
     pub fn new(data: ChunkData) -> Self {
         let mut key = get_key();
         let pow = data.pow();
-        let hash = Self::hash_data(&pow, &data);
+        let hash = Self::hash_data_for_sign(&pow, &data);
         let sign = key.sign(hash.as_bytes());
         Chunk { sign, pow, data }
     }
