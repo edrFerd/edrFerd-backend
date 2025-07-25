@@ -1,21 +1,38 @@
-use crate::GLOBAL_SOCKET;
-use crate::chunk::{Chunk, ChunkData};
-use crate::libs::data_struct::{Block, InitBroadcast};
-use chrono;
+use std::sync::OnceLock;
+use tokio::sync::mpsc::UnboundedSender;
 use chrono::TimeDelta;
 use log::{debug, error, info, warn};
-#[allow(unused)]
 use std::borrow::Cow;
-use tokio::sync::mpsc::UnboundedSender;
+use crate::chunk::Chunk;
+use crate::GLOBAL_SOCKET;
+use crate::libs::data_struct::InitBroadcast;
 
-/// 网络接收循环，持续监听 UDP 数据包。
+pub struct ChunkWithTime {
+    chunk: Chunk,
+    time: chrono::DateTime<chrono::Utc>,
+}
+
+impl ChunkWithTime {
+    pub fn new(chunk: Chunk) -> Self {
+        Self {
+            chunk,
+            time: chrono::Utc::now(),
+        }
+    }
+}
+
+/// 监听 UDP 套接字并处理接收到的数据包。
 ///
-/// 该函数会绑定到全局套接字并持续接收来自网络的数据包，
-/// 对接收到的数据进行处理和验证。
+/// 本函数将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口。
+/// 然后，它将进入一个无限循环，等待套接字接收到 UDP 数据包。
 ///
-/// 返回值：`anyhow::Result<()>` 执行结果
+/// 在接收到数据包时，它将将其解析为 `Chunk` 或 `InitBroadcast` 类型，
+/// 并根据解析结果进行相应处理。
+///
+/// 该函数会在发现解析错误时打印错误信息。
 pub async fn receive_loop(sender: UnboundedSender<Chunk>) -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
+    CHUNK_SENDER.get_or_init(|| sender);
     let sock = GLOBAL_SOCKET.get().unwrap();
     info!("Listening on: {}", sock.local_addr()?);
 
@@ -52,6 +69,7 @@ fn process_pack(data: Cow<str>) {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
             if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
+                process_chuck(c);
             } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
             }
         }
@@ -60,6 +78,8 @@ fn process_pack(data: Cow<str>) {
         }
     }
 }
+
+static CHUNK_SENDER: OnceLock<UnboundedSender<Chunk>> = OnceLock::new();
 
 /// 处理单个数据块，包括时间戳验证、签名验证和工作量证明验证。
 ///
@@ -73,6 +93,9 @@ fn process_pack(data: Cow<str>) {
 ///
 /// 返回值：`anyhow::Result<()>` 处理结果
 fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
+
+    let sender = CHUNK_SENDER.get().expect("Sender未初始化");
+
     // 检查时间差是否在2分钟（120秒）内
     let current_timestamp = chrono::Utc::now().time();
     let chunk_time = chunk.data.timestamp;
@@ -105,32 +128,5 @@ fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     }
     // 验证没问题，现在需要修改方块列表了
 
-    Ok(())
-}
-
-/// 发送区块解释到网络。
-///
-/// 创建一个包含指定区块和难度的数据块，并通过广播发送到网络。
-///
-/// 参数：
-/// - `block`: 要发送的区块数据
-/// - `difficult`: 挖矿难度
-///
-/// 返回值：`anyhow::Result<()>` 发送结果
-pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()> {
-    // TODO hash
-    // TODO Salt
-    let chunk_data = ChunkData::new(
-        "unimpled_hash".parse()?,
-        block,
-        "random_salt".parse()?,
-        114514,
-    );
-    let chunk = Chunk::new(chunk_data);
-    let json_str: String = serde_json::to_string(&chunk)?;
-    let socket = GLOBAL_SOCKET.get().unwrap();
-    socket
-        .send_to(json_str.as_bytes(), "255.255.255.255:8080")
-        .await?;
     Ok(())
 }
