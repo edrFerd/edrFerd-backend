@@ -64,6 +64,9 @@ async fn async_main_logic() -> anyhow::Result<()> {
     let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
     log::info!("数据处理工作循环已启动");
 
+    // 发送初始化信息
+    core::send::send_init().await?;
+
     // let waiter = tokio::spawn(libs::static_server::web_main(recv));
     let waiter = tokio::spawn(web_main(recv));
     tokio::signal::ctrl_c().await.ok();

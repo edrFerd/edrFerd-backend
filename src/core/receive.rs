@@ -49,7 +49,7 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
                     continue;
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
-                // info!("从 {addr} 接收到数据: {received_data}");
+                info!("从 {addr} 接收到数据: {received_data}");
                 process_pack(received_data);
             }
             Err(e) => {

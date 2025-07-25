@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::GLOBAL_SOCKET;
 use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
+use crate::libs::key::get_key;
 use crate::world::work::cmp_hash;
 
 /// 初始化广播消息结构。
@@ -13,6 +14,31 @@ pub struct InitBroadcast {
     pub linten_only: bool,
     pub serve_port: u16,
     pub pub_key: VerifyingKey,
+}
+
+impl InitBroadcast {
+    pub fn new(listen_only: bool, serve_port: u16) -> Self {
+        let pub_key = get_key().verifying_key();
+        Self {
+            linten_only: listen_only,
+            serve_port,
+            pub_key,
+        }
+    }
+}
+
+pub async fn send_init() -> anyhow::Result<()> {
+    let port = 1111;
+    let pack = InitBroadcast::new(false, port);
+    let msg = serde_json::to_string(&pack)?;
+    let socket = GLOBAL_SOCKET.get().unwrap();
+    log::info!("准备发送初始化信息");
+    socket.set_broadcast(true)?;
+    socket
+        .send_to(msg.as_bytes(), ("255.255.255.255", 0))
+        .await?;
+    log::info!("成功发送 init");
+    Ok(())
 }
 
 /// 发送区块解释到网络。
