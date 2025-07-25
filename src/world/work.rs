@@ -5,7 +5,8 @@ use crate::world::get_world;
 use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use foldhash::HashMapExt;
-use log::{debug, info, warn};
+
+use log::{debug, info, trace, warn};
 use std::any::Any;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -24,7 +25,9 @@ pub async fn work_loop(mut receiver: UnboundedReceiver<ChunkWithTime>) {
     let mut last_tick = current_tick - chrono::Duration::milliseconds(WORK_INTERVAL_MS);
     loop {
         let mut buf = Vec::new();
-        receiver.recv_many(&mut buf, 0).await;
+        while let Ok(chunk) = receiver.try_recv() {
+            buf.push(chunk);
+        }
         last_tick = current_tick; // 移交上一次tick
         current_tick = chrono::Utc::now(); // 当前tick时间
         work(buf, current_tick, last_tick).await;

@@ -70,6 +70,7 @@ fn process_pack(data: Cow<str>) {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
             if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
+                debug!("接收到数据块，准备处理");
                 process_chuck(c);
             } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
             }

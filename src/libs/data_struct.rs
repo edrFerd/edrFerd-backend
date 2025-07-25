@@ -1,4 +1,4 @@
-use std::{hash::Hash, io::Write};
+use std::{hash::Hash, io::Write, fmt::{Display, Formatter}};
 
 #[allow(dead_code)]
 use crate::libs::key::get_key;
@@ -20,6 +20,12 @@ pub struct BlockPoint {
     x: i64,
     y: i64,
     z: i64,
+}
+
+impl Display for BlockPoint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{},{})", self.x, self.y, self.z)
+    }
 }
 
 impl BlockPoint {
