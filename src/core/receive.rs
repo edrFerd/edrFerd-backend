@@ -1,11 +1,11 @@
+use crate::GLOBAL_SOCKET;
+use crate::chunk::Chunk;
+use crate::libs::data_struct::InitBroadcast;
+use chrono::TimeDelta;
+use log::{debug, error, info, trace, warn};
+use std::borrow::Cow;
 use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
-use chrono::TimeDelta;
-use log::{debug, error, info, warn};
-use std::borrow::Cow;
-use crate::chunk::Chunk;
-use crate::GLOBAL_SOCKET;
-use crate::libs::data_struct::InitBroadcast;
 
 pub struct ChunkWithTime {
     chunk: Chunk,
@@ -30,7 +30,7 @@ impl ChunkWithTime {
 /// 并根据解析结果进行相应处理。
 ///
 /// 该函数会在发现解析错误时打印错误信息。
-pub async fn receive_loop(sender: UnboundedSender<Chunk>) -> anyhow::Result<()> {
+pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
     CHUNK_SENDER.get_or_init(|| sender);
     let sock = GLOBAL_SOCKET.get().unwrap();
@@ -74,12 +74,12 @@ fn process_pack(data: Cow<str>) {
             }
         }
         Err(e) => {
-            warn!("aaaaaaaaaaa???,{e}");
+            warn!("a?,{e}");
         }
     }
 }
 
-static CHUNK_SENDER: OnceLock<UnboundedSender<Chunk>> = OnceLock::new();
+static CHUNK_SENDER: OnceLock<UnboundedSender<ChunkWithTime>> = OnceLock::new();
 
 /// 处理单个数据块，包括时间戳验证、签名验证和工作量证明验证。
 ///
@@ -93,7 +93,6 @@ static CHUNK_SENDER: OnceLock<UnboundedSender<Chunk>> = OnceLock::new();
 ///
 /// 返回值：`anyhow::Result<()>` 处理结果
 fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
-
     let sender = CHUNK_SENDER.get().expect("Sender未初始化");
 
     // 检查时间差是否在2分钟（120秒）内
@@ -117,16 +116,18 @@ fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     // 验证签名
     let is_verify_available = chunk.verify_sign();
     if !is_verify_available {
-        warn!("签名验证不通过");
+        warn!("签名验证不通过,{chunk}");
         return Ok(());
     }
     // 验证PoW
     let is_pow_available = chunk.verify_pow();
     if !is_pow_available {
-        warn!("pow验证不通过");
+        warn!("pow验证不通过,{chunk}");
         return Ok(());
     }
     // 验证没问题，现在需要修改方块列表了
-
+    // 丢进sender里面
+    sender.send(ChunkWithTime::new(chunk))?;
+    trace!("chunk已发送");
     Ok(())
 }

@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::io::Write;
 
 use crate::libs::{data_struct::Block, key::get_key};
@@ -18,6 +19,12 @@ pub struct Chunk {
     pub sign: Signature,
     pub pow: BlakeHash,
     pub data: ChunkData,
+}
+
+impl Display for Chunk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
 }
 
 impl Chunk {
