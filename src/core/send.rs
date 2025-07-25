@@ -1,6 +1,9 @@
-use crate::chunk::{Chunk, ChunkData};
+use blake3::Hash as BlakeHash;
+
 use crate::GLOBAL_SOCKET;
+use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
+use crate::world::work::cmp_hash;
 
 /// 发送区块解释到网络。
 ///
@@ -11,15 +14,17 @@ use crate::libs::data_struct::Block;
 /// - `difficult`: 挖矿难度
 ///
 /// 返回值：`anyhow::Result<()>` 发送结果
-pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()> {
-    // TODO hash
-    // TODO Salt
-    let chunk_data = ChunkData::new(
-        "unimpled_hash".parse()?,
-        block,
-        "random_salt".parse()?,
-        114514,
-    );
+pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Result<()> {
+    let mut rand = 0_u64;
+    loop {
+        let one = ChunkData::new(difficult, block.clone(), "some aaaa".to_string(), rand);
+        let hash = one.pow();
+        if cmp_hash(&hash, &difficult).is_le() {
+            break;
+        }
+        rand += 1;
+    }
+    let chunk_data = ChunkData::new(difficult, block, "some aaaa".to_string(), rand);
     let chunk = Chunk::new(chunk_data);
     let json_str: String = serde_json::to_string(&chunk)?;
     let socket = GLOBAL_SOCKET.get().unwrap();

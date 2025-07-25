@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// 区块信息，包含位置和外观数据。
 /// 要声明的方块
-#[derive(Debug, Hash, Deserialize, Serialize)]
+#[derive(Debug, Clone, Hash, Deserialize, Serialize)]
 pub struct Block {
     pub point: BlockPoint,
     pub block_appearance: BlockInfo,
@@ -24,9 +24,9 @@ pub struct BlockPoint {
 
 /// 区块的外观信息，包含类型标识符。
 /// 方块所属的信息
-#[derive(Debug, Deserialize, Serialize, Hash, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialOrd, PartialEq, Eq)]
 pub struct BlockInfo {
-   pub type_id: String,
+    pub type_id: String,
 }
 impl BlockInfo {
     pub fn new(type_id: String) -> Self {
