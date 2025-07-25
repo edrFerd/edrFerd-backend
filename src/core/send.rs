@@ -1,9 +1,19 @@
 use blake3::Hash as BlakeHash;
+use ed25519_dalek::VerifyingKey;
+use serde::{Deserialize, Serialize};
 
 use crate::GLOBAL_SOCKET;
 use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
 use crate::world::work::cmp_hash;
+
+/// 初始化广播消息结构。
+#[derive(Debug, Hash, Deserialize, Serialize)]
+pub struct InitBroadcast {
+    pub linten_only: bool,
+    pub serve_port: u16,
+    pub pub_key: VerifyingKey,
+}
 
 /// 发送区块解释到网络。
 ///

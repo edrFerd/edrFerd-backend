@@ -19,7 +19,7 @@ const WORK_INTERVAL_MS: i64 = 50;
 ///
 /// 每次循环会等待 `WORK_INTERVAL_MS` 毫秒后再继续。
 pub async fn work_loop(mut receiver: UnboundedReceiver<ChunkWithTime>) {
-    info!("启动工作循环，间隔: {} 毫秒", WORK_INTERVAL_MS);
+    info!("启动工作循环，间隔: {WORK_INTERVAL_MS} 毫秒");
     let mut current_tick = chrono::Utc::now();
     let mut last_tick = current_tick - chrono::Duration::milliseconds(WORK_INTERVAL_MS);
     loop {
@@ -99,9 +99,7 @@ async fn work(
         let chunk = chunk_with_time.chunk;
         let chunk_block_point = chunk.data.explanation.point;
         let info_key = InfoKey::new(chunk.data.pub_key, chunk.data.explanation.block_appearance);
-        let inner: &mut BlockInfoMap = chunk_map
-            .entry(chunk_block_point)
-            .or_insert_with(BlockInfoMap::new);
+        let inner: &mut BlockInfoMap = chunk_map.entry(chunk_block_point).or_default();
         match inner.get_mut(&info_key) {
             Some(pow) => {
                 *pow = hash_add(pow, &chunk.pow);
@@ -120,10 +118,7 @@ async fn work(
         if let Some((info_key, pow)) = info_map.into_iter().max_by(|(_, a), (_, b)| cmp_hash(a, b))
         {
             let appearance = &info_key.block_appearance;
-            info!(
-                "Point {:?} 最优方块外观: {:?}, pow: {:?}",
-                point, appearance, pow
-            );
+            info!("Point {point:?} 最优方块外观: {appearance:?}, pow: {pow:?}");
             // 将更新后的方块写入到World中
             world.set_block(point, BlockInfo::new(appearance.type_id.clone()));
         }

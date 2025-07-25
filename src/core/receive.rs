@@ -1,11 +1,12 @@
 use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
-use crate::libs::data_struct::InitBroadcast;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use std::borrow::Cow;
 use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
+
+use super::send::InitBroadcast;
 
 pub struct ChunkWithTime {
     pub chunk: Chunk,
@@ -48,7 +49,7 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
                     continue;
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
-                info!("从 {addr} 接收到数据: {received_data}");
+                // info!("从 {addr} 接收到数据: {received_data}");
                 process_pack(received_data);
             }
             Err(e) => {
@@ -106,12 +107,11 @@ fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     const TWO_MINUTES: TimeDelta = chrono::Duration::minutes(2);
     if time_diff > TWO_MINUTES {
         warn!(
-            "时间戳验证失败：chunk时间 {:?} 与当前时间 {:?} 相差超过2分钟",
-            chunk_time, current_timestamp
+            "时间戳验证失败：chunk时间 {chunk_time:?} 与当前时间 {current_timestamp:?} 相差超过2分钟"
         );
         return Ok(());
     }
-    debug!("时间戳验证通过：时间差为 {:?}", time_diff);
+    debug!("时间戳验证通过：时间差为 {time_diff:?}");
 
     // 验证签名
     let is_verify_available = chunk.verify_sign();

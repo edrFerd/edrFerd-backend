@@ -33,6 +33,3 @@ impl BlockInfo {
         Self { type_id }
     }
 }
-/// 初始化广播消息结构。
-#[derive(Debug, Hash, Deserialize, Serialize)]
-pub struct InitBroadcast {}
