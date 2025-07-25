@@ -1,9 +1,11 @@
+#![allow(unused)]
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot;
 
 mod libs;
 mod logger;
+mod world;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

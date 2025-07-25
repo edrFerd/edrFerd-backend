@@ -15,14 +15,16 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn verify(&self) -> bool {
+    pub fn verify_sign(&self) -> bool {
         let key = self.data.pub_key.clone();
         let hash = Self::hash_data_for_sign(&self.pow, &self.data);
         key.verify_strict(hash.as_bytes(), &self.sign)
             .ok()
             .is_some()
     }
-
+    pub fn verify_pow(&self) -> bool {
+        self.pow == self.data.pow()
+    }
     fn hash_data_for_sign(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
         let mut hasher = blake3::Hasher::new();
         hasher.update(pow.as_bytes());
@@ -43,10 +45,13 @@ impl Chunk {
         Chunk { sign, pow, data }
     }
 
+    pub fn new_from_raw(data: ChunkData, pow: BlakeHash, sign: Signature) -> Self {
+        Self { sign, pow, data }
+    }
 }
 
 /// 一个块
-#[derive(Debug, Hash, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ChunkData {
     /// 当前应用程序的版本
     version: String,
@@ -55,15 +60,17 @@ pub struct ChunkData {
     /// 对某个方块的解释
     explanation: Block,
     /// 当前的时间戳
-    timestamp: NaiveTime,
+    pub timestamp: NaiveTime,
     /// 公钥
     pub_key: VerifyingKey,
     /// 盐
-    salt: String, //来自injective区块链
+    salt_from_chunks: String, //来自injective区块链
+    /// 真正的盐
+    this_is_rand: u64,
 }
 
 impl ChunkData {
-    pub fn new(prev_hash: BlakeHash, explanation: Block, salt: String) -> Self {
+    pub fn new(prev_hash: BlakeHash, explanation: Block, salt: String, rand: u64) -> Self {
         let pubkey = get_key().verifying_key();
         ChunkData {
             version: crate::VERSION.to_string(),
@@ -71,7 +78,8 @@ impl ChunkData {
             explanation,
             timestamp: Utc::now().time(),
             pub_key: pubkey,
-            salt,
+            salt_from_chunks: salt,
+            this_is_rand: rand,
         }
     }
 
@@ -86,18 +94,21 @@ impl ChunkData {
 /// 要声明的方块
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct Block {
-    point: Point,
-    block_appearance: BlockAppearance,
+    point: BlockPoint,
+    block_appearance: BlockInfo,
 }
 /// 目标的节点
 #[derive(Debug, Hash, Deserialize, Serialize)]
-pub struct Point {
+pub struct BlockPoint {
     x: i64,
     y: i64,
     z: i64,
 }
-/// 方块外观
-#[derive(Debug, Hash, Deserialize, Serialize)]
-pub struct BlockAppearance {
+/// 方块所属的信息
+#[derive(Debug, Deserialize, Serialize, Hash)]
+pub struct BlockInfo {
     type_id: String,
 }
+
+#[derive(Debug, Hash, Deserialize, Serialize)]
+pub struct InitBroadcast {}
