@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::apis::server::web_main;
+use crate::apis::debug_server::web_main;
 use log::info;
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
