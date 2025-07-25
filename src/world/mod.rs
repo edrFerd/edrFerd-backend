@@ -15,7 +15,7 @@ pub struct World {
 
 pub static WORLD_QUEUE: OnceLock<UnboundedSender<Chunk>> = OnceLock::new();
 
-// 你说得对，但是原神是一款由米哈游开发的开放世界冒险游戏。在这款游戏中，你将进入一个名为提瓦特的幻想世界，
+
 pub static GLOBAL_WORLD: OnceLock<World> = OnceLock::new();
 impl World {
     pub fn new() -> Self {
