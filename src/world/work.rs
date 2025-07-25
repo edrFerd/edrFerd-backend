@@ -1,5 +1,5 @@
 use crate::libs::data_struct::Chunk;
-use log::{info, debug};
+use log::{debug, info};
 
 const WORK_INTERVAL: f64 = 1.0 / 20.0;
 

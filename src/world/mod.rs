@@ -1,12 +1,12 @@
 mod work;
 
-use crate::libs::data_struct::{BlockInfo, Chunk};
 use crate::libs::data_struct::BlockPoint;
+use crate::libs::data_struct::{BlockInfo, Chunk};
 use foldhash::HashMapExt;
-use std::sync::{LazyLock, OnceLock};
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::Mutex;
 use log::info;
+use std::sync::{LazyLock, OnceLock};
+use tokio::sync::Mutex;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// 世界地图类型，键为 `BlockPoint`，值为 `BlockInfo`。
 type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfo>;

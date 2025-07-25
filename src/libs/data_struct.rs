@@ -33,7 +33,7 @@ impl Chunk {
             .ok()
             .is_some()
     }
-    
+
     /// 验证工作量证明是否正确。
     ///
     /// 检查存储的 PoW 哈希是否与重新计算的哈希匹配。
@@ -42,7 +42,7 @@ impl Chunk {
     pub fn verify_pow(&self) -> bool {
         self.pow == self.data.pow()
     }
-    
+
     /// 为签名生成数据哈希。
     ///
     /// 将工作量证明哈希和数据内容组合后生成用于签名的哈希值。
@@ -58,13 +58,6 @@ impl Chunk {
         let jsoned = serde_json::to_string(data).expect("wtf");
         hasher.update(jsoned.as_bytes());
         hasher.finalize()
-    }
-
-    /// 计算数据块的哈希值。
-    ///
-    /// 返回值：`BlakeHash` 数据块的哈希值
-    pub fn data_hash(&self) -> BlakeHash {
-
     }
 
     /// 创建新的数据块。
