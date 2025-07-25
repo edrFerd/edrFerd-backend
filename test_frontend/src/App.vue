@@ -5,7 +5,7 @@ const message = ref('')
 
 async function callTestSend() {
   try {
-    const response = await fetch('http://127.0.0.1:1414/test_send')
+    const response = await fetch('http://127.0.0.1:1415/test_send')
     const data = await response.text()
     message.value = data
     console.log(data)
