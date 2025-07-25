@@ -48,7 +48,7 @@ impl InfoKey {
 type BlockInfoMap = foldhash::HashMap<InfoKey, BlakeHash>;
 type ChunkMap = foldhash::HashMap<BlockPoint, BlockInfoMap>;
 
-fn cmp_hash(hash1: &BlakeHash, hash2: &BlakeHash) -> Ordering {
+pub fn cmp_hash(hash1: &BlakeHash, hash2: &BlakeHash) -> Ordering {
     let h1 = hash1.as_bytes();
     let h2 = hash2.as_bytes();
     for (b1, b2) in h1.iter().zip(h2.iter()) {
@@ -60,7 +60,7 @@ fn cmp_hash(hash1: &BlakeHash, hash2: &BlakeHash) -> Ordering {
     Ordering::Equal
 }
 
-fn hash_add(hash1: &BlakeHash, hash2: &BlakeHash) -> BlakeHash {
+pub fn hash_add(hash1: &BlakeHash, hash2: &BlakeHash) -> BlakeHash {
     let h1 = hash1.as_bytes();
     let h2 = hash2.as_bytes();
     let mut need_next = false;
@@ -78,7 +78,7 @@ fn hash_add(hash1: &BlakeHash, hash2: &BlakeHash) -> BlakeHash {
 /// 参数:
 /// - `chunks`: 数据块列表
 /// - `current_tick`: 当前tick时间
-/// - `last_tick`: 上一次tick时间  
+/// - `last_tick`: 上一次tick时间
 async fn work(
     chunks: Vec<ChunkWithTime>,
     current_tick: chrono::DateTime<chrono::Utc>,
