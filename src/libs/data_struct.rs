@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 /// 要声明的方块
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct Block {
-    point: BlockPoint,
-    block_appearance: BlockInfo,
+    pub point: BlockPoint,
+    pub block_appearance: BlockInfo,
 }
 
 /// 三维空间中的区块位置坐标。
 /// 目标的节点
-#[derive(Debug, Hash, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct BlockPoint {
     x: i64,
     y: i64,
@@ -24,11 +24,15 @@ pub struct BlockPoint {
 
 /// 区块的外观信息，包含类型标识符。
 /// 方块所属的信息
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Deserialize, Serialize, Hash, PartialOrd, PartialEq, Eq)]
 pub struct BlockInfo {
-    type_id: String,
+   pub type_id: String,
 }
-
+impl BlockInfo {
+    pub fn new(type_id: String) -> Self {
+        Self { type_id }
+    }
+}
 /// 初始化广播消息结构。
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct InitBroadcast {}

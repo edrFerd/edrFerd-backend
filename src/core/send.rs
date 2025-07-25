@@ -26,5 +26,6 @@ pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()
     socket
         .send_to(json_str.as_bytes(), "255.255.255.255:8080")
         .await?;
+    // TODO 把自己发的包也丢到receiver里面
     Ok(())
 }

@@ -1,7 +1,13 @@
 use crate::chunk::Chunk;
 use crate::core::receive::ChunkWithTime;
-use crate::libs::data_struct::BlockPoint;
+use crate::libs::data_struct::{BlockInfo, BlockPoint};
+use crate::world::get_world;
+use blake3::Hash as BlakeHash;
+use ed25519_dalek::VerifyingKey;
+use foldhash::HashMapExt;
 use log::{debug, info, warn};
+use std::any::Any;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -28,11 +34,47 @@ pub async fn work_loop(mut receiver: UnboundedReceiver<ChunkWithTime>) {
         debug!("完成一次工作循环");
     }
 }
-
-struct block_infos {
-    
+#[derive(Debug, Hash, PartialEq, Eq)]
+struct InfoKey {
+    pub_key: VerifyingKey,
+    pub block_appearance: BlockInfo,
 }
-type ChunkMap = HashMap<BlockPoint, block_infos>;
+impl InfoKey {
+    pub fn new(pub_key: VerifyingKey, block_appearance: BlockInfo) -> Self {
+        Self {
+            pub_key,
+            block_appearance,
+        }
+    }
+}
+type BlockInfoMap = foldhash::HashMap<InfoKey, BlakeHash>;
+type ChunkMap = foldhash::HashMap<BlockPoint, BlockInfoMap>;
+
+fn cmp_hash(hash1: &BlakeHash, hash2: &BlakeHash) -> Ordering {
+    let h1 = hash1.as_bytes();
+    let h2 = hash2.as_bytes();
+    for (b1, b2) in h1.iter().zip(h2.iter()) {
+        match b1.cmp(b2) {
+            Ordering::Equal => continue,
+            ord => return ord,
+        }
+    }
+    Ordering::Equal
+}
+
+fn hash_add(hash1: &BlakeHash, hash2: &BlakeHash) -> BlakeHash {
+    let h1 = hash1.as_bytes();
+    let h2 = hash2.as_bytes();
+    let mut need_next = false;
+    let mut hash = [0u8; 32];
+    for ((b1, b2), b3) in h1.iter().zip(h2.iter()).zip(hash.iter_mut()).rev() {
+        let tmp = (*b1 as u32) + (*b2 as u32) + (if need_next { 1 } else { 0 });
+        need_next = tmp > 255;
+        *b3 = (tmp % 256) as u8;
+    }
+    BlakeHash::from_bytes(hash)
+}
+
 /// 工作函数，处理receiver中的数据
 ///
 /// 参数:
@@ -44,6 +86,7 @@ async fn work(
     current_tick: chrono::DateTime<chrono::Utc>,
     last_tick: chrono::DateTime<chrono::Utc>,
 ) {
+    let mut chunk_map = ChunkMap::new();
     for chunk_with_time in chunks {
         info!("从receiver接收到数据块，时间戳: {}", chunk_with_time.time);
         // 判断是否这个块的时间比上一个tick时间早，如果是的话，就drop it
@@ -53,45 +96,37 @@ async fn work(
         }
         // 剩下的都在合法时间内，可以正常处理
         let chunk = chunk_with_time.chunk;
+        let chunk_block_point = chunk.data.explanation.point;
+        let info_key = InfoKey::new(chunk.data.pub_key, chunk.data.explanation.block_appearance);
+        let inner: &mut BlockInfoMap = chunk_map
+            .entry(chunk_block_point)
+            .or_insert_with(BlockInfoMap::new);
+        match inner.get_mut(&info_key) {
+            Some(pow) => {
+                *pow = hash_add(pow, &chunk.pow);
+            }
+            None => {
+                inner.insert(info_key, chunk.pow);
+            }
+        }
+        info!("已完成一个数据块的插入")
     }
-
+    // 获取全局 World 实例的互斥锁并获取可变引用
+    let world_mutex = get_world();
+    let mut world = world_mutex.lock().await;
+    for (point, info_map) in chunk_map {
+        // 找到pow最大的entry
+        if let Some((info_key, pow)) =
+            info_map.into_iter().max_by(|(_, a), (_, b)| cmp_hash(a, b))
+        {
+            let appearance = &info_key.block_appearance;
+            info!(
+                "Point {:?} 最优方块外观: {:?}, pow: {:?}",
+                point, appearance, pow
+            );
+            // 将更新后的方块写入到World中
+            world.set_block(point, BlockInfo::new(appearance.type_id.clone()));
+        }
+    }
     info!("完成本次工作循环的数据处理");
-}
-
-/// 验证数据块是否合法
-///
-/// 参数:
-/// - `chunk_with_time`: 带时间戳的数据块
-///
-/// 返回值: `bool` - 数据块是否合法
-async fn is_chunk_valid(chunk_with_time: &ChunkWithTime) -> bool {
-    // TODO: 这里实现具体的合法性判断逻辑
-    // 目前先做简单的时间验证，可以后续扩展为调用process_chuck函数
-
-    let current_time = chrono::Utc::now();
-    let time_diff = current_time - chunk_with_time.time;
-
-    // 检查时间戳是否在合理范围内（比如5分钟内）
-    let max_age = chrono::Duration::minutes(5);
-
-    if time_diff > max_age {
-        warn!("数据块时间戳过旧: {} 秒前", time_diff.num_seconds());
-        return false;
-    }
-
-    if time_diff < chrono::Duration::zero() {
-        warn!("数据块时间戳来自未来: {} 秒后", (-time_diff).num_seconds());
-        return false;
-    }
-
-    debug!("数据块时间验证通过，时间差: {} 秒", time_diff.num_seconds());
-    true
-}
-
-/// 处理单个数据块的逻辑。
-///
-/// 参数:
-/// - `chunk`: 需要处理的 `Chunk` 实例
-async fn handle_chunk(chunk: Chunk) {
-    info!("开始处理数据块: {chunk:?}");
 }

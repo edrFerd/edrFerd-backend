@@ -109,11 +109,11 @@ pub struct ChunkData {
     /// 前一个hash
     prev_hash: BlakeHash,
     /// 对某个方块的解释
-    explanation: Block,
+    pub explanation: Block,
     /// 当前的时间戳
     pub timestamp: NaiveTime,
     /// 公钥
-    pub_key: VerifyingKey,
+    pub pub_key: VerifyingKey,
     /// 盐
     salt_from_chunks: String, //来自injective区块链
     /// 真正的盐
