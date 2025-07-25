@@ -1,3 +1,4 @@
+use crate::info;
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -5,6 +6,7 @@ use tokio::sync::oneshot::Receiver;
 
 use std::net::SocketAddr;
 
+use crate::PORT;
 use crate::libs::key::get_key;
 
 /// 启动 HTTP 服务器。
@@ -20,8 +22,8 @@ async fn server() -> Result<()> {
         .route("/world", get(world))
         .route("/query", get(query));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    println!("listening on {addr}");
+    let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
+    info!("listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
     Ok(())

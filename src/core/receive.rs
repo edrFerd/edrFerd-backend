@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ChunkWithTime {
-   pub chunk: Chunk,
+    pub chunk: Chunk,
     pub time: chrono::DateTime<chrono::Utc>,
 }
 
@@ -37,7 +37,7 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
     info!("Listening on: {}", sock.local_addr()?);
 
     const BUF_SIZE: usize = 1024 * 1024;
-    let mut buf = [0; BUF_SIZE]; // temp only
+    let mut buf = vec![0; BUF_SIZE]; // temp only
 
     loop {
         match sock.recv_from(&mut buf).await {

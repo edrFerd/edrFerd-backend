@@ -28,10 +28,8 @@ pub async fn work_loop(mut receiver: UnboundedReceiver<ChunkWithTime>) {
         last_tick = current_tick; // 移交上一次tick
         current_tick = chrono::Utc::now(); // 当前tick时间
         work(buf, current_tick, last_tick).await;
-
         // 等待下一个循环间隔
         tokio::time::sleep(tokio::time::Duration::from_millis(WORK_INTERVAL_MS as u64)).await;
-        debug!("完成一次工作循环");
     }
 }
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -86,6 +84,9 @@ async fn work(
     current_tick: chrono::DateTime<chrono::Utc>,
     last_tick: chrono::DateTime<chrono::Utc>,
 ) {
+    if (chunks.is_empty()) {
+        return;
+    }
     let mut chunk_map = ChunkMap::new();
     for chunk_with_time in chunks {
         info!("从receiver接收到数据块，时间戳: {}", chunk_with_time.time);
@@ -116,8 +117,7 @@ async fn work(
     let mut world = world_mutex.lock().await;
     for (point, info_map) in chunk_map {
         // 找到pow最大的entry
-        if let Some((info_key, pow)) =
-            info_map.into_iter().max_by(|(_, a), (_, b)| cmp_hash(a, b))
+        if let Some((info_key, pow)) = info_map.into_iter().max_by(|(_, a), (_, b)| cmp_hash(a, b))
         {
             let appearance = &info_key.block_appearance;
             info!(
