@@ -71,26 +71,9 @@ pub async fn send_init() -> anyhow::Result<()> {
     log::info!("准备发送初始化信息");
     socket.set_broadcast(true)?;
 
-    // socket
-    //     .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
-    //     .await?; //这个消息发送后自己也能收到。
-
-    // 获取所有广播地址
-    let broadcast_addresses = get_broadcast_addresses();
-
-    if broadcast_addresses.is_empty() {
-        log::warn!("未找到有效的广播地址，使用受限广播");
-        let target = SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), PORT);
-        socket.send_to(msg.as_bytes(), target).await?;
-    } else {
-        for broadcast_addr in broadcast_addresses {
-            let target = SocketAddrV4::new(broadcast_addr, PORT);
-            match socket.send_to(msg.as_bytes(), target).await {
-                Ok(_) => log::info!("成功发送到 {broadcast_addr}:{PORT}"),
-                Err(e) => log::error!("发送到 {broadcast_addr} 失败: {e}"),
-            }
-        }
-    }
+    socket
+        .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
+        .await?; //这个消息发送后自己也能收到。
     log::info!("成功发送 init");
     Ok(())
 }
