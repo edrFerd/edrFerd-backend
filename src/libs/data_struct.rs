@@ -22,6 +22,12 @@ pub struct BlockPoint {
     z: i64,
 }
 
+impl BlockPoint {
+    pub fn new(x: i64, y: i64, z: i64) -> Self{
+        BlockPoint {x, y, z}
+    }
+}
+
 /// 区块的外观信息，包含类型标识符。
 /// 方块所属的信息
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialOrd, PartialEq, Eq)]

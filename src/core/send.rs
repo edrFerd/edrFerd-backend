@@ -2,7 +2,7 @@ use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
 
-use crate::GLOBAL_SOCKET;
+use crate::{GLOBAL_SOCKET, PORT};
 use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
 use crate::libs::key::get_key;
@@ -28,14 +28,13 @@ impl InitBroadcast {
 }
 
 pub async fn send_init() -> anyhow::Result<()> {
-    let port = 1111;
-    let pack = InitBroadcast::new(false, port);
+    let pack = InitBroadcast::new(false, PORT);
     let msg = serde_json::to_string(&pack)?;
     let socket = GLOBAL_SOCKET.get().unwrap();
     log::info!("准备发送初始化信息");
     socket.set_broadcast(true)?;
     socket
-        .send_to(msg.as_bytes(), ("255.255.255.255", 0))
+        .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
         .await?;
     log::info!("成功发送 init");
     Ok(())

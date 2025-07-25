@@ -18,7 +18,7 @@ async fn server() -> Result<()> {
     Ok(())
 }
 pub async fn test_send() {
-    send_explanation(BlockPoint::new(0, 0), 0).await.unwrap();
+    // send_explanation(BlockPoint::new(0, 0, 0), 0).await.unwrap();
 }
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {
     let task = tokio::spawn(server());
