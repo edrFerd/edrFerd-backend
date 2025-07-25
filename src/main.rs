@@ -4,6 +4,7 @@ use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
+use crate::apis::server::web_main;
 
 mod chunk;
 mod core;
@@ -63,8 +64,8 @@ async fn async_main_logic() -> anyhow::Result<()> {
     let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
     log::info!("数据处理工作循环已启动");
 
-    let waiter = tokio::spawn(libs::static_server::web_main(recv));
-
+    // let waiter = tokio::spawn(libs::static_server::web_main(recv));
+    let waiter = tokio::spawn(web_main(recv));
     tokio::signal::ctrl_c().await.ok();
     send.send(());
 
