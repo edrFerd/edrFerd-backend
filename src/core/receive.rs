@@ -8,8 +8,8 @@ use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ChunkWithTime {
-    chunk: Chunk,
-    time: chrono::DateTime<chrono::Utc>,
+   pub chunk: Chunk,
+    pub time: chrono::DateTime<chrono::Utc>,
 }
 
 impl ChunkWithTime {
