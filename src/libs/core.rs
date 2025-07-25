@@ -1,10 +1,12 @@
 use crate::GLOBAL_SOCKET;
-use crate::libs::data_struct::{Block, Chunk, ChunkData, InitBroadcast};
+use crate::chunk::{Chunk, ChunkData};
+use crate::libs::data_struct::{Block, InitBroadcast};
 use chrono;
 use chrono::TimeDelta;
 use log::{debug, error, info, warn};
 #[allow(unused)]
 use std::borrow::Cow;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// 网络接收循环，持续监听 UDP 数据包。
 ///
@@ -12,7 +14,7 @@ use std::borrow::Cow;
 /// 对接收到的数据进行处理和验证。
 ///
 /// 返回值：`anyhow::Result<()>` 执行结果
-pub async fn receive_loop() -> anyhow::Result<()> {
+pub async fn receive_loop(sender: UnboundedSender<Chunk>) -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
     let sock = GLOBAL_SOCKET.get().unwrap();
     info!("Listening on: {}", sock.local_addr()?);

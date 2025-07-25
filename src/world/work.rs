@@ -1,5 +1,6 @@
-use crate::libs::data_struct::Chunk;
 use log::{debug, info};
+
+use crate::chunk::Chunk;
 
 const WORK_INTERVAL: f64 = 1.0 / 20.0;
 
@@ -7,7 +8,7 @@ const WORK_INTERVAL: f64 = 1.0 / 20.0;
 ///
 /// 每次循环会等待 `WORK_INTERVAL` 后再继续。
 async fn work_loop() {
-    info!("启动工作循环，间隔: {} 秒", WORK_INTERVAL);
+    info!("启动工作循环，间隔: {WORK_INTERVAL} 秒");
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs_f64(WORK_INTERVAL)).await;
         debug!("完成一次工作循环");
@@ -19,5 +20,5 @@ async fn work_loop() {
 /// 参数:
 /// - `chunk`: 需要处理的 `Chunk` 实例
 async fn handle_chunk(chunk: Chunk) {
-    info!("开始处理数据块: {:?}", chunk);
+    info!("开始处理数据块: {chunk:?}");
 }

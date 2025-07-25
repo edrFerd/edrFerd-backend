@@ -1,7 +1,7 @@
 mod work;
 
+use crate::libs::data_struct::BlockInfo;
 use crate::libs::data_struct::BlockPoint;
-use crate::libs::data_struct::{BlockInfo, Chunk};
 use foldhash::HashMapExt;
 use log::info;
 use std::sync::{LazyLock, OnceLock};
@@ -15,9 +15,6 @@ type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfo>;
 pub struct World {
     world: WorldMapType,
 }
-
-/// 全局的区块消息队列，用于在不同任务间传递 `Chunk`。
-pub static WORLD_QUEUE: OnceLock<UnboundedSender<Chunk>> = OnceLock::new();
 
 /// 全局的 `World` 实例，使用 `OnceLock` 实现懒初始化。
 pub static GLOBAL_WORLD: OnceLock<World> = OnceLock::new();
