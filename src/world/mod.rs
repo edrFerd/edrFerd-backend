@@ -1,4 +1,4 @@
-mod work;
+pub mod work;
 
 use crate::libs::data_struct::BlockInfo;
 use crate::libs::data_struct::BlockPoint;

@@ -2,13 +2,13 @@
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot;
+use tokio::sync::mpsc;
 
 mod chunk;
 mod libs;
 mod logger;
 mod core;
 mod world;
-
 
 /// 服务版本号，通过环境变量 `CARGO_PKG_VERSION` 获取。
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -48,11 +48,25 @@ async fn async_main() -> anyhow::Result<()> {
     GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
     let (send, recv) = oneshot::channel();
 
+    // 创建数据处理channel
+    let (chunk_sender, chunk_receiver) = mpsc::unbounded_channel();
+    
+    // 启动数据接收循环
+    let receive_handle = tokio::spawn(core::receive::receive_loop(chunk_sender));
+    log::info!("数据接收循环已启动");
+    
+    // 启动数据处理工作循环
+    let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
+    log::info!("数据处理工作循环已启动");
+
     let waiter = tokio::spawn(libs::static_server::web_main(recv));
 
     tokio::signal::ctrl_c().await.ok();
     send.send(());
 
+    // 优雅关闭各个任务
+    receive_handle.abort();
+    work_handle.abort();
     waiter.await;
 
     log::info!("服务关闭");
