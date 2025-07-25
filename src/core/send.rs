@@ -69,6 +69,5 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
     socket
         .send_to(json_str.as_bytes(), ("255.255.255.255", PORT))
         .await?;
-    // TODO 把自己发的包也丢到receiver里面
     Ok(())
 }
