@@ -8,10 +8,16 @@ use blake3::Hash as BlakeHash;
 use log::info;
 use std::net::SocketAddr;
 use tokio::sync::oneshot::Receiver;
+use tower_http::cors::CorsLayer;
 
 async fn server() -> Result<()> {
-    let app = Router::new().route("/test_send", get(test_send));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 1415));
+    let cors = CorsLayer::very_permissive();
+
+    let app = Router::new()
+        .route("/test_send", get(test_send))
+        .layer(cors);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 1415));
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!("正在监听 {addr}作为服务器");
