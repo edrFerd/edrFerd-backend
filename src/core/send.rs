@@ -2,14 +2,16 @@ use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
 
-use crate::{GLOBAL_SOCKET, PORT};
 use crate::chunk::{Chunk, ChunkData};
+use crate::core::message::NetworkMessage;
 use crate::libs::data_struct::Block;
 use crate::libs::key::get_key;
+use crate::p2p::get_p2p_sender;
 use crate::world::work::cmp_hash;
+use crate::PORT;
 
 /// 初始化广播消息结构。
-#[derive(Debug, Hash, Deserialize, Serialize)]
+#[derive(Debug, Hash, Deserialize, Serialize, Clone)]
 pub struct InitBroadcast {
     pub linten_only: bool,
     pub serve_port: u16,
@@ -29,20 +31,18 @@ impl InitBroadcast {
 
 pub async fn send_init() -> anyhow::Result<()> {
     let pack = InitBroadcast::new(false, PORT);
-    let msg = serde_json::to_string(&pack)?;
-    let socket = GLOBAL_SOCKET.get().unwrap();
-    log::info!("准备发送初始化信息");
-    socket.set_broadcast(true)?;
-    socket
-        .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
-        .await?;
-    log::info!("成功发送 init");
+    let message = NetworkMessage::Init(pack);
+    let sender = get_p2p_sender();
+    if let Err(e) = sender.send(message) {
+        log::error!("通过 P2P channel 发送初始化消息失败: {}", e);
+    }
+    log::info!("成功发送 init 消息到 P2P 网络");
     Ok(())
 }
 
 /// 发送区块解释到网络。
 ///
-/// 创建一个包含指定区块和难度的数据块，并通过广播发送到网络。
+/// 创建一个包含指定区块和难度的数据块，并通过 P2P 网络广播。
 ///
 /// 参数：
 /// - `block`: 要发送的区块数据
@@ -61,11 +61,12 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
     }
     let chunk_data = ChunkData::new(difficult, block, "some aaaa".to_string(), rand);
     let chunk = Chunk::new(chunk_data);
-    let json_str: String = serde_json::to_string(&chunk)?;
-    let socket = GLOBAL_SOCKET.get().unwrap();
-    socket
-        .send_to(json_str.as_bytes(), "255.255.255.255:8080")
-        .await?;
+    let message = NetworkMessage::Chunk(chunk.clone());
+    let sender = get_p2p_sender();
+    if let Err(e) = sender.send(message) {
+        log::error!("通过 P2P channel 发送区块失败: {}", e);
+    }
+
     // TODO 把自己发的包也丢到receiver里面
     Ok(())
 }

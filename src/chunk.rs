@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// - 数字签名用于验证数据完整性
 /// - 工作量证明用于防止垃圾数据
 /// - 实际的数据内容
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Chunk {
     pub sign: Signature,
     pub pow: BlakeHash,
@@ -102,7 +102,7 @@ impl Chunk {
 ///
 /// 包含版本信息、前一个哈希、区块解释、时间戳、公钥和盐值等。
 /// 一个块
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ChunkData {
     /// 当前应用程序的版本
     version: String,

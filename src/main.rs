@@ -2,7 +2,6 @@
 use crate::apis::server::web_main;
 use log::info;
 use std::sync::{Arc, OnceLock};
-use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
@@ -11,20 +10,12 @@ mod chunk;
 mod core;
 mod libs;
 mod logger;
+mod p2p;
 mod world;
 
 /// 服务版本号，通过环境变量 `CARGO_PKG_VERSION` 获取。
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PORT: u16 = 1414;
-/// 全局 UDP 套接字实例，使用 `OnceLock` 实现懒初始化。
-static GLOBAL_SOCKET: OnceLock<Arc<UdpSocket>> = OnceLock::new();
-
-/// 获取全局 UDP 套接字的引用。
-///
-/// 返回值：`&'static Arc<UdpSocket>` 全局套接字引用
-pub fn get_socket() -> &'static Arc<UdpSocket> {
-    GLOBAL_SOCKET.get().unwrap()
-}
 
 /// 程序主入口点，初始化日志系统并启动异步运行时。
 ///
@@ -48,17 +39,19 @@ fn main() -> anyhow::Result<()> {
 /// 返回值：`anyhow::Result<()>` 执行结果
 async fn async_main_logic() -> anyhow::Result<()> {
     info!("服务启动");
-    let socket = UdpSocket::bind(format!("0.0.0.0:{PORT}")).await?;
-    socket.set_broadcast(true);
-    GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
     let (send, recv) = oneshot::channel();
+
+    // 创建 P2P 网络命令 channel
+    let (p2p_command_sender, p2p_command_receiver) = mpsc::unbounded_channel();
+    p2p::set_p2p_sender(p2p_command_sender);
 
     // 创建数据处理channel
     let (chunk_sender, chunk_receiver) = mpsc::unbounded_channel();
 
-    // 启动数据接收循环
-    let receive_handle = tokio::spawn(core::receive::receive_loop(chunk_sender));
-    log::info!("数据接收循环已启动");
+    // 启动 P2P 网络
+    let p2p_swarm = p2p::p2p_init().await?;
+    let p2p_handle = tokio::spawn(p2p::p2p_event_loop(p2p_swarm, p2p_command_receiver));
+    log::info!("P2P 网络已启动");
 
     // 启动数据处理工作循环
     let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
@@ -73,8 +66,8 @@ async fn async_main_logic() -> anyhow::Result<()> {
     send.send(());
 
     // 优雅关闭各个任务
-    receive_handle.abort();
     work_handle.abort();
+    p2p_handle.abort();
     waiter.await;
 
     log::info!("服务关闭");

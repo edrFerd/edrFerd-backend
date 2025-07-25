@@ -1,15 +1,16 @@
-use flexi_logger::{Logger, colored_detailed_format};
+use flexi_logger::{colored_detailed_format, Logger};
 use log::info;
 
 /// 初始化日志系统。
 ///
 /// 配置 flexi_logger 以使用带颜色的详细格式，
-/// 并设置默认日志级别为 trace。
+/// 并为本项目(edrFerd)和依赖库设置不同的日志级别。
+/// 默认级别为 `info`，`edrFerd` 的级别为 `debug`。
 ///
 /// 注释中包含了可选的文件日志和日志轮转配置，
 /// 目前暂未启用这些功能。
 pub fn init_logger() {
-    Logger::try_with_str("trace") // 设置默认日志级别为 info
+    Logger::try_with_str("info,edrFerd=debug") // 设置默认日志级别为 info, 本项目为 debug
         .unwrap()
         .format(colored_detailed_format) // 使用带颜色的详细格式
         .start()

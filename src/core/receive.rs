@@ -1,12 +1,9 @@
-use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
-use std::borrow::Cow;
 use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
-
-use super::send::InitBroadcast;
+use crate::core::message::NetworkMessage;
 
 pub struct ChunkWithTime {
     pub chunk: Chunk,
@@ -22,60 +19,23 @@ impl ChunkWithTime {
     }
 }
 
-/// 监听 UDP 套接字并处理接收到的数据包。
+/// 处理接收到的网络消息。
 ///
-/// 本函数将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口。
-/// 然后，它将进入一个无限循环，等待套接字接收到 UDP 数据包。
-///
-/// 在接收到数据包时，它将将其解析为 `Chunk` 或 `InitBroadcast` 类型，
-/// 并根据解析结果进行相应处理。
-///
-/// 该函数会在发现解析错误时打印错误信息。
-pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Result<()> {
-    // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
-    CHUNK_SENDER.get_or_init(|| sender);
-    let sock = GLOBAL_SOCKET.get().unwrap();
-    info!("Listening on: {}", sock.local_addr()?);
-
-    const BUF_SIZE: usize = 1024 * 1024;
-    let mut buf = vec![0; BUF_SIZE]; // temp only
-
-    loop {
-        match sock.recv_from(&mut buf).await {
-            Ok((len, addr)) => {
-                // 将接收到的字节转换为字符串
-                if len > BUF_SIZE {
-                    warn!("接受到了 > 1M 巨巨巨大包");
-                    continue;
-                };
-                let received_data = String::from_utf8_lossy(&buf[..len]);
-                info!("从 {addr} 接收到数据: {received_data}");
-                process_pack(received_data);
-            }
-            Err(e) => {
-                error!("接收到数据失败: {e}");
-            }
-        }
-    }
-}
-
-/// 处理接收到的数据包。
-///
-/// 尝试将接收到的 JSON 数据解析为 `Chunk` 或 `InitBroadcast` 类型，
-/// 并根据解析结果进行相应处理。
+/// 根据消息类型（Init 或 Chunk）进行不同的处理。
 ///
 /// 参数：
-/// - `data`: 接收到的字符串数据
-fn process_pack(data: Cow<str>) {
-    match serde_json::from_str::<serde_json::Value>(&data) {
-        Ok(data) => {
-            if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
-                process_chuck(c);
-            } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
-            }
+/// - `message`: 从 P2P 网络接收到的消息
+pub fn process_pack(message: NetworkMessage) {
+    match message {
+        NetworkMessage::Init(init_message) => {
+            info!("收到网络初始化消息: {:?}", init_message);
+            // TODO: 在这里处理节点发现逻辑，例如将其添加到已知节点列表
         }
-        Err(e) => {
-            warn!("a?,{e}");
+        NetworkMessage::Chunk(chunk) => {
+            info!("收到新的区块数据块");
+            if let Err(e) = process_chuck(chunk) {
+                warn!("处理区块失败: {}", e);
+            }
         }
     }
 }
