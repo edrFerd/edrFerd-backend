@@ -1,7 +1,6 @@
 use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
-use if_addrs::{get_if_addrs, IfAddr};
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 
