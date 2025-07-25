@@ -2,11 +2,11 @@ use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
 
-use crate::{GLOBAL_SOCKET, PORT};
 use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
 use crate::libs::key::get_key;
 use crate::world::work::cmp_hash;
+use crate::{GLOBAL_SOCKET, PORT};
 
 /// 初始化广播消息结构。
 #[derive(Debug, Hash, Deserialize, Serialize)]
@@ -33,9 +33,10 @@ pub async fn send_init() -> anyhow::Result<()> {
     let socket = GLOBAL_SOCKET.get().unwrap();
     log::info!("准备发送初始化信息");
     socket.set_broadcast(true)?;
+
     socket
         .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
-        .await?;
+        .await?; //这个消息发送后自己也能收到。
     log::info!("成功发送 init");
     Ok(())
 }
@@ -64,7 +65,7 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
     let json_str: String = serde_json::to_string(&chunk)?;
     let socket = GLOBAL_SOCKET.get().unwrap();
     socket
-        .send_to(json_str.as_bytes(), "255.255.255.255:8080")
+        .send_to(json_str.as_bytes(), ("255.255.255.255", PORT))
         .await?;
     // TODO 把自己发的包也丢到receiver里面
     Ok(())
