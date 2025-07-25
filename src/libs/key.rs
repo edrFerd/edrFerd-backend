@@ -5,12 +5,21 @@ use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+/// 全局签名密钥实例，使用 `OnceLock` 实现懒初始化。
 static PUBKEY: OnceLock<SigningKey> = OnceLock::new();
 
+/// 获取全局签名密钥。
+///
+/// 首次调用时会从文件中加载密钥，如果文件不存在则创建新密钥。
+///
+/// 返回值：`SigningKey` 签名密钥的克隆
 pub fn get_key() -> SigningKey {
     PUBKEY.get_or_init(get_key_from_file).clone()
 }
 
+/// 获取配置目录路径。
+///
+/// 返回值：`PathBuf` 配置目录的路径
 fn get_config_dir() -> PathBuf {
     PathBuf::from("./config")
 }
@@ -19,6 +28,12 @@ use anyhow::Result;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 
+/// 从文件中加载签名密钥。
+///
+/// 如果密钥文件不存在，则创建新的密钥。
+/// 如果文件存在，则读取并解析密钥数据。
+///
+/// 返回值：`SigningKey` 从文件加载的签名密钥
 fn get_key_from_file() -> SigningKey {
     let config_dir = get_config_dir();
     let key_file_path = config_dir.join("keys.json");
@@ -36,6 +51,12 @@ fn get_key_from_file() -> SigningKey {
     SigningKey::from_bytes(&key_bytes)
 }
 
+/// 初始化新的签名密钥并保存到文件。
+///
+/// 生成一个新的随机密钥，创建配置目录（如果不存在），
+/// 并将密钥以 JSON 格式保存到文件中。
+///
+/// 返回值：`Result<SigningKey>` 新创建的签名密钥
 fn init_key() -> Result<SigningKey> {
     let config_dir = get_config_dir();
     if !config_dir.exists() {

@@ -1,6 +1,13 @@
 use flexi_logger::{Logger, colored_detailed_format};
 use log::info;
 
+/// 初始化日志系统。
+///
+/// 配置 flexi_logger 以使用带颜色的详细格式，
+/// 并设置默认日志级别为 trace。
+/// 
+/// 注释中包含了可选的文件日志和日志轮转配置，
+/// 目前暂未启用这些功能。
 pub fn init_logger() {
     Logger::try_with_str("trace") // 设置默认日志级别为 info
         .unwrap()

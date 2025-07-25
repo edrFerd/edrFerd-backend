@@ -6,7 +6,12 @@ use log::{debug, error, info, warn};
 #[allow(unused)]
 use std::borrow::Cow;
 
-// 工作循环
+/// 网络接收循环，持续监听 UDP 数据包。
+///
+/// 该函数会绑定到全局套接字并持续接收来自网络的数据包，
+/// 对接收到的数据进行处理和验证。
+///
+/// 返回值：`anyhow::Result<()>` 执行结果
 pub async fn receive_loop() -> anyhow::Result<()> {
     // 将套接字绑定到 "0.0.0.0:8080"，你可以根据需要更改端口
     let sock = GLOBAL_SOCKET.get().unwrap();
@@ -34,6 +39,13 @@ pub async fn receive_loop() -> anyhow::Result<()> {
     }
 }
 
+/// 处理接收到的数据包。
+///
+/// 尝试将接收到的 JSON 数据解析为 `Chunk` 或 `InitBroadcast` 类型，
+/// 并根据解析结果进行相应处理。
+///
+/// 参数：
+/// - `data`: 接收到的字符串数据
 fn process_pack(data: Cow<str>) {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
@@ -47,6 +59,17 @@ fn process_pack(data: Cow<str>) {
     }
 }
 
+/// 处理单个数据块，包括时间戳验证、签名验证和工作量证明验证。
+///
+/// 该函数会依次验证：
+/// 1. 时间戳是否在合理范围内（2分钟内）
+/// 2. 数字签名是否有效
+/// 3. 工作量证明是否正确
+///
+/// 参数：
+/// - `chunk`: 要处理的数据块
+///
+/// 返回值：`anyhow::Result<()>` 处理结果
 fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
     // 检查时间差是否在2分钟（120秒）内
     let current_timestamp = chrono::Utc::now().time();
@@ -82,6 +105,16 @@ fn process_chuck(chunk: Chunk) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+/// 发送区块解释到网络。
+///
+/// 创建一个包含指定区块和难度的数据块，并通过广播发送到网络。
+///
+/// 参数：
+/// - `block`: 要发送的区块数据
+/// - `difficult`: 挖矿难度
+///
+/// 返回值：`anyhow::Result<()>` 发送结果
 pub async fn send_explanation(block: Block, difficult: u32) -> anyhow::Result<()> {
     // TODO hash
     // TODO Salt

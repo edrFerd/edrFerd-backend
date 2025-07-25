@@ -7,6 +7,12 @@ use chrono::{NaiveTime, Utc};
 use ed25519_dalek::{Signature, VerifyingKey, ed25519::signature::SignerMut};
 use serde::{Deserialize, Serialize};
 
+/// 数据块结构，包含签名、工作量证明和数据内容。
+///
+/// 这是区块链中的基本数据单元，每个块都包含：
+/// - 数字签名用于验证数据完整性
+/// - 工作量证明用于防止垃圾数据
+/// - 实际的数据内容
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Chunk {
     pub sign: Signature,
@@ -15,6 +21,11 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    /// 验证数据块的数字签名是否有效。
+    ///
+    /// 使用数据块中的公钥验证签名的正确性。
+    ///
+    /// 返回值：`bool` 签名是否有效
     pub fn verify_sign(&self) -> bool {
         let key = self.data.pub_key.clone();
         let hash = Self::hash_data_for_sign(&self.pow, &self.data);
@@ -22,9 +33,25 @@ impl Chunk {
             .ok()
             .is_some()
     }
+    
+    /// 验证工作量证明是否正确。
+    ///
+    /// 检查存储的 PoW 哈希是否与重新计算的哈希匹配。
+    ///
+    /// 返回值：`bool` 工作量证明是否有效
     pub fn verify_pow(&self) -> bool {
         self.pow == self.data.pow()
     }
+    
+    /// 为签名生成数据哈希。
+    ///
+    /// 将工作量证明哈希和数据内容组合后生成用于签名的哈希值。
+    ///
+    /// 参数：
+    /// - `pow`: 工作量证明哈希
+    /// - `data`: 数据块内容
+    ///
+    /// 返回值：`BlakeHash` 用于签名的哈希值
     fn hash_data_for_sign(pow: &BlakeHash, data: &ChunkData) -> BlakeHash {
         let mut hasher = blake3::Hasher::new();
         hasher.update(pow.as_bytes());
@@ -33,10 +60,21 @@ impl Chunk {
         hasher.finalize()
     }
 
+    /// 计算数据块的哈希值。
+    ///
+    /// 返回值：`BlakeHash` 数据块的哈希值
     pub fn data_hash(&self) -> BlakeHash {
 
     }
 
+    /// 创建新的数据块。
+    ///
+    /// 根据提供的数据内容自动生成签名和工作量证明。
+    ///
+    /// 参数：
+    /// - `data`: 数据块内容
+    ///
+    /// 返回值：`Self` 新创建的数据块
     pub fn new(data: ChunkData) -> Self {
         let mut key = get_key();
         let pow = data.pow();
@@ -45,11 +83,24 @@ impl Chunk {
         Chunk { sign, pow, data }
     }
 
+    /// 从原始数据创建数据块。
+    ///
+    /// 使用提供的签名和工作量证明直接构造数据块，不进行重新计算。
+    ///
+    /// 参数：
+    /// - `data`: 数据块内容
+    /// - `pow`: 工作量证明哈希
+    /// - `sign`: 数字签名
+    ///
+    /// 返回值：`Self` 构造的数据块
     pub fn new_from_raw(data: ChunkData, pow: BlakeHash, sign: Signature) -> Self {
         Self { sign, pow, data }
     }
 }
 
+/// 数据块的内容部分。
+///
+/// 包含版本信息、前一个哈希、区块解释、时间戳、公钥和盐值等。
 /// 一个块
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChunkData {
@@ -70,6 +121,17 @@ pub struct ChunkData {
 }
 
 impl ChunkData {
+    /// 创建新的数据块内容。
+    ///
+    /// 使用当前时间戳和密钥自动填充相关字段。
+    ///
+    /// 参数：
+    /// - `prev_hash`: 前一个区块的哈希值
+    /// - `explanation`: 区块解释
+    /// - `salt`: 来自区块链的盐值
+    /// - `rand`: 随机数
+    ///
+    /// 返回值：`Self` 新创建的数据块内容
     pub fn new(prev_hash: BlakeHash, explanation: Block, salt: String, rand: u64) -> Self {
         let pubkey = get_key().verifying_key();
         ChunkData {
@@ -83,6 +145,11 @@ impl ChunkData {
         }
     }
 
+    /// 计算工作量证明哈希。
+    ///
+    /// 将数据内容序列化为 JSON 后计算 Blake3 哈希值。
+    ///
+    /// 返回值：`BlakeHash` 工作量证明哈希
     pub fn pow(&self) -> BlakeHash {
         let jsoned = serde_json::to_string(&self).expect("wtf");
         let mut hasher = blake3::Hasher::new();
@@ -91,12 +158,15 @@ impl ChunkData {
     }
 }
 
+/// 区块信息，包含位置和外观数据。
 /// 要声明的方块
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct Block {
     point: BlockPoint,
     block_appearance: BlockInfo,
 }
+
+/// 三维空间中的区块位置坐标。
 /// 目标的节点
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct BlockPoint {
@@ -104,11 +174,14 @@ pub struct BlockPoint {
     y: i64,
     z: i64,
 }
+
+/// 区块的外观信息，包含类型标识符。
 /// 方块所属的信息
 #[derive(Debug, Deserialize, Serialize, Hash)]
 pub struct BlockInfo {
     type_id: String,
 }
 
+/// 初始化广播消息结构。
 #[derive(Debug, Hash, Deserialize, Serialize)]
 pub struct InitBroadcast {}
