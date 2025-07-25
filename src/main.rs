@@ -3,8 +3,8 @@ use crate::apis::server::web_main;
 use log::info;
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
+use crate::p2p::{P2pService, P2pCommand, P2pEvent, Broadcaster};
 
 mod apis;
 mod chunk;
@@ -65,8 +65,23 @@ async fn async_main_logic() -> anyhow::Result<()> {
     let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
     log::info!("数据处理工作循环已启动");
 
-    // 发送初始化信息
-    core::send::send_init().await?;
+    // ==== 新增：启动 P2P 服务 ====
+    let (tx_cmd, rx_cmd) = mpsc::unbounded_channel();
+    let (tx_evt, mut rx_evt) = mpsc::unbounded_channel();
+
+    // 启动 P2P Service
+    tokio::spawn(async move {
+        if let Ok(svc) = P2pService::new(tx_evt, rx_cmd).await {
+            svc.run().await;
+        }
+    });
+    let broadcaster = Broadcaster::new(tx_cmd.clone());
+
+    // 示例广播初始化信息
+    broadcaster.broadcast(b"hello peers".to_vec());
+    // ==== end P2P ====
+
+    // core::send::send_init().await?; // 已由 libp2p 替代
 
     // let waiter = tokio::spawn(libs::static_server::web_main(recv));
     let waiter = tokio::spawn(web_main(recv));

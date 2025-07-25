@@ -17,3 +17,5 @@ ed25519-dalek = { version = "2.2.0", features = ["rand_core", "serde"] }
 serde_json = "1.0.141"
 base64 = "0.22.1"
 anyhow = "1.0.98"
+libp2p = { version = "0.53", features = ["tokio", "tcp", "dns", "noise", "yamux", "mdns", "gossipsub", "macros"] }
+futures = "0.3"
