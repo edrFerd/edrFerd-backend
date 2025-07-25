@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 use tokio::sync::oneshot::Receiver;
 
 async fn server() -> Result<()> {
-    let app = Router::new().route("/",get(send));
+    let app = Router::new();
     let addr = SocketAddr::from(([127, 0, 0, 1], 1415));
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -17,9 +17,9 @@ async fn server() -> Result<()> {
     axum::serve(listener, app).await?;
     Ok(())
 }
-pub async fn test_send() {
-    send_explanation(BlockPoint::new(0, 0), 0).await.unwrap();
-}
+// pub async fn test_send() {
+//     send_explanation(BlockPoint::new(0, 0), 0).await.unwrap();
+// }
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {
     let task = tokio::spawn(server());
     stop_receiver.await?;
