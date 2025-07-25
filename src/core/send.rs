@@ -30,40 +30,6 @@ impl InitBroadcast {
     }
 }
 
-/// 获取所有活跃网络接口的广播地址
-fn get_broadcast_addresses() -> Vec<Ipv4Addr> {
-    let mut addresses = Vec::new();
-
-    if let Ok(interfaces) = get_if_addrs() {
-        for interface in interfaces {
-            if interface.is_loopback() {
-                continue;
-            }
-
-            match interface.addr {
-                IfAddr::V4(ipv4) => {
-                    // 跳过无效网络接口
-                    if ipv4.ip.is_unspecified() || ipv4.netmask.is_unspecified() {
-                        continue;
-                    }
-
-                    let broadcast = calculate_broadcast(ipv4.ip, ipv4.netmask);
-                    addresses.push(broadcast);
-                }
-                IfAddr::V6(_) => {} // 跳过IPv6接口
-            }
-        }
-    }
-
-    addresses
-}
-
-fn calculate_broadcast(ip: Ipv4Addr, netmask: Ipv4Addr) -> Ipv4Addr {
-    let ip: u32 = ip.into();
-    let netmask: u32 = netmask.into();
-    Ipv4Addr::from(ip | !netmask)
-}
-
 pub async fn send_init() -> anyhow::Result<()> {
     let pack = InitBroadcast::new(false, PORT);
     let msg = serde_json::to_string(&pack)?;
@@ -73,7 +39,7 @@ pub async fn send_init() -> anyhow::Result<()> {
 
     socket
         .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
-        .await?; //这个消息发送后自己也能收到。
+        .await?;
     log::info!("成功发送 init");
     Ok(())
 }
