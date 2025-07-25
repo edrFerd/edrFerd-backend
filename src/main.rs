@@ -12,6 +12,7 @@ mod core;
 mod libs;
 mod logger;
 mod world;
+mod p2p;
 
 /// 服务版本号，通过环境变量 `CARGO_PKG_VERSION` 获取。
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
