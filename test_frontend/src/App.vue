@@ -1,5 +1,5 @@
 <script setup>
-import {ref} from "vue";
+import {ref, computed} from "vue";
 
 const message = ref('')
 const worldData = ref(null)
@@ -7,6 +7,22 @@ const blockX = ref(0)
 const blockY = ref(0)
 const blockZ = ref(0)
 const blockType = ref('default_block')
+
+const sortedWorldData = computed(() => {
+  if (!worldData.value) {
+    return [];
+  }
+  return Object.entries(worldData.value)
+    .map(([point, info]) => {
+      const coords = point.slice(1, -1).split(',').map(Number);
+      return { point, info, coords };
+    })
+    .sort((a, b) => {
+      if (a.coords[0] !== b.coords[0]) return a.coords[0] - b.coords[0];
+      if (a.coords[1] !== b.coords[1]) return a.coords[1] - b.coords[1];
+      return a.coords[2] - b.coords[2];
+    });
+});
 
 async function showWorld() {
   try {
@@ -87,10 +103,10 @@ async function callTestSend() {
     <div class="action-section">
       <h2>世界状态</h2>
       <button @click="showWorld">显示/刷新世界</button>
-      <div v-if="worldData" class="world-display">
-        <div v-for="(info, point) in worldData" :key="point" class="block-card">
-          <p><strong>坐标:</strong> {{ point }}</p>
-          <p><strong>类型:</strong> {{ info.type_id }}</p>
+      <div v-if="sortedWorldData.length > 0" class="world-display">
+        <div v-for="block in sortedWorldData" :key="block.point" class="block-card">
+          <p><strong>坐标:</strong> {{ block.point }}</p>
+          <p><strong>类型:</strong> {{ block.info.type_id }}</p>
         </div>
       </div>
     </div>
