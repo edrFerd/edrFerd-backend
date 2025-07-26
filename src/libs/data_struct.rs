@@ -16,6 +16,11 @@ pub struct Block {
     pub point: BlockPoint,
     pub block_info: BlockInfo,
 }
+impl Block{
+    pub fn new(point: BlockPoint, block_info: BlockInfo) -> Self {
+        Self { point, block_info }
+    }
+}
 
 /// 三维空间中的区块位置坐标。
 /// 目标的节点

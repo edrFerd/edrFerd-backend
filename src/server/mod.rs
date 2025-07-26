@@ -1,4 +1,5 @@
 use tokio::sync::{mpsc, oneshot};
+use crate::world::work::BlockUpdatePack;
 
 pub mod api_server;
 pub mod debug_server;
@@ -13,7 +14,7 @@ pub const API_PORT: u16 = 1415;
 
 pub async fn start_all_server(
     recv: oneshot::Receiver<()>,
-    work_event_recv: mpsc::UnboundedReceiver<()>,
+    work_event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>,
 ) -> anyhow::Result<()> {
     let (debug_sender, debug_receiver) = oneshot::channel();
     debug_server::web_main(debug_receiver).await?;
