@@ -81,6 +81,17 @@ impl World {
             })
             .collect()
     }
+
+    pub fn replace_with_block_with_pub_key(&mut self, blocks: Vec<BlockWithPubKey>) {
+        let mut world = WorldMapType::with_capacity(blocks.len());
+        for block in blocks {
+            world.insert(
+                block.block.point,
+                BlockInfoWithPubKey::new(block.block.block_info, block.pub_key),
+            );
+        }
+        self.world = world;
+    }
 }
 
 /// 获取全局唯一的 `World` 实例的互斥锁。

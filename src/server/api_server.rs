@@ -27,10 +27,9 @@ async fn server() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn send_world() -> Json<WorldMapType> {
-    let world = get_world();
-    let world_map = world.lock().await;
-    Json(world_map.world.clone())
+pub async fn send_world() -> Json<Vec<BlockWithPubKey>> {
+    let world = get_world().lock().await;
+    Json(world.as_block_with_pub_key())
 }
 
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {

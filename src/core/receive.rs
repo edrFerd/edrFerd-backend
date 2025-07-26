@@ -2,7 +2,7 @@ use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use crate::libs::key::get_key;
 use crate::server::API_PORT;
-use crate::world::{WorldMapType, get_world};
+use crate::world::{BlockInfoWithPubKey, BlockWithPubKey, WorldMapType, get_world};
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
@@ -110,12 +110,12 @@ async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
                         format!("http://{}:{}/world", url.ip(), url.port())
                     };
                     let data = reqwest::Client::new().get(url).send().await?;
-                    match data.json::<WorldMapType>().await {
-                        Ok(new_map) => {
+                    match data.json::<Vec<BlockWithPubKey>>().await {
+                        Ok(world_block) => {
                             // 初始化
                             let world = get_world();
                             let mut map = world.lock().await;
-                            map.world = new_map;
+                            map.replace_with_block_with_pub_key(world_block);
                             info!("成功从 {addr} 获取了世界状态");
                         }
                         Err(e) => {
