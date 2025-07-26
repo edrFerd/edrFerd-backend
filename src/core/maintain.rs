@@ -2,10 +2,10 @@
 use crate::core::send::send_explation_in_time;
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use foldhash::{HashMap, HashMapExt};
-use log::{debug, info};
+use tokio::sync::Mutex;
+use log::{info, debug};
 use std::sync::OnceLock;
 use std::time::Duration;
-use tokio::sync::Mutex;
 
 /// 维护区块结构，保存发送间隔和区块信息
 #[derive(Clone)]
@@ -34,10 +34,7 @@ pub fn get_maintain_blocks() -> &'static Mutex<HashMap<BlockPoint, MaintainBlock
 /// 将新的维护区块加入队列
 pub async fn add_new_maintain_block(point: BlockPoint, maintain_block: MaintainBlock) {
     let mut guard = get_maintain_blocks().lock().await;
-    info!(
-        "添加维护区块: {:?}, 发送延迟: {} ms",
-        point, maintain_block.duration
-    );
+    info!("添加维护区块: {:?}, 发送延迟: {} ms", point, maintain_block.duration);
     guard.insert(point, maintain_block);
 }
 
