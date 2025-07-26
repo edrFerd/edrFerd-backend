@@ -1,5 +1,6 @@
 #![allow(unused)]
-use crate::apis::server::web_main;
+use crate::apis::debug_server::web_main;
+use crate::apis::frontend_server::start_frontend_server;
 use log::info;
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
@@ -67,6 +68,14 @@ async fn async_main_logic() -> anyhow::Result<()> {
     // 发送初始化信息
     core::send::send_init().await?;
 
+    // 启动前端 WebSocket 服务器
+    let frontend_handle = tokio::spawn(async {
+        if let Err(e) = start_frontend_server(1416).await {
+            log::error!("前端 WebSocket 服务器启动失败: {}", e);
+        }
+    });
+    log::info!("前端 WebSocket 服务器已启动在端口 1416");
+
     // let waiter = tokio::spawn(libs::static_server::web_main(recv));
     let waiter = tokio::spawn(web_main(recv));
     tokio::signal::ctrl_c().await.ok();
@@ -75,6 +84,7 @@ async fn async_main_logic() -> anyhow::Result<()> {
     // 优雅关闭各个任务
     receive_handle.abort();
     work_handle.abort();
+    frontend_handle.abort();
     waiter.await;
 
     log::info!("服务关闭");

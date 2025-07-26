@@ -1,5 +1,5 @@
 <script setup>
-import {ref} from "vue";
+import {ref, computed, onMounted, onUnmounted} from "vue";
 
 const message = ref('')
 const worldData = ref(null)
@@ -7,6 +7,22 @@ const blockX = ref(0)
 const blockY = ref(0)
 const blockZ = ref(0)
 const blockType = ref('default_block')
+
+const sortedWorldData = computed(() => {
+  if (!worldData.value) {
+    return [];
+  }
+  return Object.entries(worldData.value)
+    .map(([point, info]) => {
+      const coords = point.slice(1, -1).split(',').map(Number);
+      return { point, info, coords };
+    })
+    .sort((a, b) => {
+      if (a.coords[0] !== b.coords[0]) return a.coords[0] - b.coords[0];
+      if (a.coords[1] !== b.coords[1]) return a.coords[1] - b.coords[1];
+      return a.coords[2] - b.coords[2];
+    });
+});
 
 async function showWorld() {
   try {
@@ -60,6 +76,89 @@ async function callTestSend() {
     console.error('Error calling test_send:', error)
   }
 }
+
+// WebSocket 相关状态
+const wsConnected = ref(false)
+const wsMessages = ref([])
+const wsMessage = ref('')
+const ws = ref(null)
+
+// WebSocket 连接函数
+function connectWebSocket() {
+  try {
+    ws.value = new WebSocket('ws://127.0.0.1:1416/ws')
+    
+    ws.value.onopen = () => {
+      wsConnected.value = true
+      addWsMessage('系统', '已连接到 WebSocket 服务器')
+      console.log('WebSocket 连接已建立')
+    }
+    
+    ws.value.onmessage = (event) => {
+      addWsMessage('服务器', event.data)
+      console.log('收到消息:', event.data)
+    }
+    
+    ws.value.onclose = () => {
+      wsConnected.value = false
+      addWsMessage('系统', 'WebSocket 连接已断开')
+      console.log('WebSocket 连接已断开')
+    }
+    
+    ws.value.onerror = (error) => {
+      addWsMessage('系统', `WebSocket 错误: ${error}`)
+      console.error('WebSocket 错误:', error)
+    }
+  } catch (error) {
+    addWsMessage('系统', `连接失败: ${error.message}`)
+    console.error('WebSocket 连接失败:', error)
+  }
+}
+
+// 断开 WebSocket 连接
+function disconnectWebSocket() {
+  if (ws.value) {
+    ws.value.close()
+    ws.value = null
+  }
+}
+
+// 发送 WebSocket 消息
+function sendWebSocketMessage() {
+  if (ws.value && wsConnected.value && wsMessage.value.trim()) {
+    ws.value.send(wsMessage.value)
+    addWsMessage('客户端', wsMessage.value)
+    wsMessage.value = ''
+  }
+}
+
+// 添加消息到消息列表
+function addWsMessage(sender, content) {
+  wsMessages.value.push({
+    sender,
+    content,
+    timestamp: new Date().toLocaleTimeString()
+  })
+  // 保持最多 50 条消息
+  if (wsMessages.value.length > 50) {
+    wsMessages.value.shift()
+  }
+}
+
+// 清空消息列表
+function clearMessages() {
+  wsMessages.value = []
+}
+
+// 组件挂载时自动连接 WebSocket
+onMounted(() => {
+  connectWebSocket()
+})
+
+// 组件卸载时断开连接
+onUnmounted(() => {
+  disconnectWebSocket()
+})
 </script>
 
 <template>
@@ -87,10 +186,52 @@ async function callTestSend() {
     <div class="action-section">
       <h2>世界状态</h2>
       <button @click="showWorld">显示/刷新世界</button>
-      <div v-if="worldData" class="world-display">
-        <div v-for="(info, point) in worldData" :key="point" class="block-card">
-          <p><strong>坐标:</strong> {{ point }}</p>
-          <p><strong>类型:</strong> {{ info.type_id }}</p>
+      <div v-if="sortedWorldData.length > 0" class="world-display">
+        <div v-for="block in sortedWorldData" :key="block.point" class="block-card">
+          <p><strong>坐标:</strong> {{ block.point }}</p>
+          <p><strong>类型:</strong> {{ block.info.type_id }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-section">
+      <h2>WebSocket 连接</h2>
+      <div class="ws-status">
+        <p>连接状态: 
+          <span :class="wsConnected ? 'status-connected' : 'status-disconnected'">
+            {{ wsConnected ? '已连接' : '未连接' }}
+          </span>
+        </p>
+        <div class="ws-controls">
+          <button @click="connectWebSocket" :disabled="wsConnected">连接</button>
+          <button @click="disconnectWebSocket" :disabled="!wsConnected">断开</button>
+        </div>
+      </div>
+      
+      <div v-if="wsConnected" class="ws-input-section">
+        <input 
+          v-model="wsMessage" 
+          type="text" 
+          placeholder="输入消息内容" 
+          @keyup.enter="sendWebSocketMessage"
+        />
+        <button @click="sendWebSocketMessage" :disabled="!wsMessage.trim()">发送消息</button>
+      </div>
+      
+      <div class="ws-message-section">
+        <div class="ws-message-header">
+          <h3>消息记录</h3>
+          <button @click="clearMessages" class="clear-btn">清空</button>
+        </div>
+        <div class="ws-message-list" v-if="wsMessages.length > 0">
+          <div v-for="msg in wsMessages" :key="msg.timestamp" class="ws-message">
+            <span class="message-time">{{ msg.timestamp }}</span>
+            <span :class="'message-sender-' + msg.sender.toLowerCase()">{{ msg.sender }}:</span>
+            <span class="message-content">{{ msg.content }}</span>
+          </div>
+        </div>
+        <div v-else class="no-messages">
+          <p>暂无消息</p>
         </div>
       </div>
     </div>
@@ -184,5 +325,90 @@ button:hover {
 
 .block-card strong {
   color: #495057;
+}
+
+.ws-message-list {
+  margin-top: 15px;
+  padding: 15px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ws-message {
+  margin-bottom: 10px;
+}
+
+.ws-message strong {
+  color: #495057;
+}
+
+.ws-status {
+  margin-bottom: 15px;
+}
+
+.ws-controls {
+  margin-top: 10px;
+}
+
+.ws-input-section {
+  margin-top: 15px;
+}
+
+.ws-message-section {
+  margin-top: 15px;
+}
+
+.ws-message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.clear-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.clear-btn:hover {
+  background-color: #c82333;
+}
+
+.no-messages {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+}
+
+.status-connected {
+  color: #2ecc71;
+}
+
+.status-disconnected {
+  color: #e74c3c;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #666;
+  margin-right: 5px;
+}
+
+.message-sender-client {
+  color: #007bff;
+}
+
+.message-sender-server {
+  color: #dc3545;
+}
+
+.message-content {
+  font-size: 14px;
 }
 </style>
