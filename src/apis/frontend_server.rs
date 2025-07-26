@@ -54,10 +54,10 @@ async fn websocket_handler(
 // 处理 WebSocket 连接
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
     info!("[WebSocket] 新客户端连接");
-    
+
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.tx.subscribe();
-    
+
     // 处理发送消息的任务
     let tx_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
@@ -75,20 +75,20 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                     sender.send(Message::Pong(data.into())).await
                 }
             };
-            
+
             if result.is_err() {
                 warn!("[WebSocket] 客户端连接断开");
                 break;
             }
         }
     });
-    
+
     // 处理接收消息的任务
     let rx_task = tokio::spawn(async move {
         while let Some(msg) = receiver.next().await {
             match msg {
                 Ok(Message::Text(text)) => {
-                    info!("[WebSocket] 收到消息: {}", text);
+                    info!("[WebSocket] 收到消息: {text}");
                     handle_text_message(text.to_string(), &state).await;
                 }
                 Ok(Message::Binary(data)) => {
@@ -107,35 +107,35 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                     break;
                 }
                 Err(e) => {
-                    error!("[WebSocket] 连接错误: {}", e);
+                    error!("[WebSocket] 连接错误: {e}");
                     break;
                 }
             }
         }
     });
-    
+
     // 等待任一任务完成
     tokio::select! {
         _ = tx_task => {}
         _ = rx_task => {}
     }
-    
+
     info!("[WebSocket] 客户端连接已断开");
 }
 
 // 处理文本消息
 async fn handle_text_message(text: String, state: &Arc<AppState>) {
-    info!("[WebSocket] 处理文本消息: {}", text);
-    
+    info!("[WebSocket] 处理文本消息: {text}");
+
     // 示例：回显消息
-    let response = format!("服务器收到: {}", text);
+    let response = format!("服务器收到: {text}");
     let _ = state.tx.send(FrontendMessage::Text(response));
 }
 
 // 处理二进制消息
 async fn handle_binary_message(data: Vec<u8>, state: &Arc<AppState>) {
     info!("[WebSocket] 处理二进制数据 ({} bytes)", data.len());
-    
+
     // 示例：回显二进制数据
     let _ = state.tx.send(FrontendMessage::Binary(data));
 }
@@ -143,14 +143,14 @@ async fn handle_binary_message(data: Vec<u8>, state: &Arc<AppState>) {
 // 启动前端服务器
 pub async fn start_frontend_server(port: u16) -> anyhow::Result<()> {
     let state = Arc::new(AppState::new());
-    
+
     let app = create_frontend_routes().with_state(state.clone());
-    
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    info!("[WebSocket] 前端 WebSocket 服务器启动在端口 {}", port);
-    
+
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    info!("[WebSocket] 前端 WebSocket 服务器启动在端口 {port}");
+
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
