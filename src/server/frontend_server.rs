@@ -87,18 +87,18 @@ pub async fn get_pubkey() -> Json<Vec<u8>> {
     Json(bytes.to_vec())
 }
 
-pub async fn set_block(Json(params): Json<SetBlockParams>) {
+pub async fn set_block(Json(params): Json<SetBlockParams>) -> Json<&'static str> {
     add_new_maintain_block(
         BlockPoint::new(params.x, params.y, params.z),
         MaintainBlock::new(params.duration, params.info),
-    );
+    ).await;
+    Json("OK")
 }
 
-
-pub async fn remove_block(Json(params): Json<RemoveBlockParams>) {
-    remove_maintain_block(BlockPoint::new(params.x, params.y, params.z)).await
+pub async fn remove_block(Json(params): Json<RemoveBlockParams>) -> Json<&'static str> {
+    remove_maintain_block(BlockPoint::new(params.x, params.y, params.z)).await;
+    Json("OK")
 }
-
 
 /// 启动一个前端服务器，用于处理来自前端的请求和响应。
 ///

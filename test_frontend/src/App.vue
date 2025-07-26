@@ -121,6 +121,52 @@ async function getPubKey() {
     console.error('Error calling get_pubkey:', error);
   }
 }
+
+// 测试 set_block
+async function testSetBlock() {
+  const params = {
+    duration: parseInt(blockTime.value),
+    x: parseInt(blockX.value),
+    y: parseInt(blockY.value),
+    z: parseInt(blockZ.value),
+    info: { type_id: blockType.value },
+  };
+  try {
+    const response = await fetch('http://127.0.0.1:1416/set_block', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.text();
+    message.value = data || 'OK';
+    console.log(data);
+  } catch (error) {
+    message.value = `Error: ${error.message}`;
+    console.error('Error calling set_block:', error);
+  }
+}
+
+// 测试 remove_block
+async function testRemoveBlock() {
+  const params = {
+    x: parseInt(blockX.value),
+    y: parseInt(blockY.value),
+    z: parseInt(blockZ.value),
+  };
+  try {
+    const response = await fetch('http://127.0.0.1:1416/remove_block', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.text();
+    message.value = data || 'OK';
+    console.log(data);
+  } catch (error) {
+    message.value = `Error: ${error.message}`;
+    console.error('Error calling remove_block:', error);
+  }
+}
 </script>
 
 <template>
@@ -148,6 +194,23 @@ async function getPubKey() {
       </div>
       <button @click="sendBlock">发送自定义方块</button>
       <button @click="sendBlockWithTime">发送指定耗时pow的方块</button>
+    </div>
+
+    <div class="action-section">
+      <h2>测试维护方块</h2>
+      <div class="form-group">
+        <label>坐标 X: <input v-model="blockX" type="number" /></label>
+        <label>坐标 Y: <input v-model="blockY" type="number" /></label>
+        <label>坐标 Z: <input v-model="blockZ" type="number" /></label>
+      </div>
+      <div class="form-group">
+        <label>方块类型 ID: <input v-model="blockType" type="text" /></label>
+      </div>
+      <div class="form-group">
+        <label>维护时间 (毫秒): <input v-model="blockTime" type="number" /></label>
+      </div>
+      <button @click="testSetBlock">添加维护方块</button>
+      <button @click="testRemoveBlock">移除维护方块</button>
     </div>
 
     <div class="action-section">
