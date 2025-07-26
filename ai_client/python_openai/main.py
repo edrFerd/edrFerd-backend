@@ -96,6 +96,7 @@ def run_conversation():
         "你是一个在3D方块世界中控制角色的AI代理。"
         "你的目标是自由修改世界，做出一些有意义的建筑"
         "你可以查看世界状态、放置方块和移除方块。"
+        "如果你想移除方块, 你只需要在对应位置设置 air 方块即可"
         "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
     )
     messages = [{"role": "user", "content": initial_prompt}]
@@ -145,23 +146,7 @@ def run_conversation():
                     "required": ["x", "y", "z", "block_id"],
                 },
             },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "remove_block",
-                "description": "移除给定坐标 (x, y, z) 的方块。",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "x": {"type": "integer"},
-                        "y": {"type": "integer"},
-                        "z": {"type": "integer"},
-                    },
-                    "required": ["x", "y", "z"],
-                },
-            },
-        },
+        }
     ]
 
     while True:
