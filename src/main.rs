@@ -1,10 +1,23 @@
 #![allow(unused)]
 
+use clap::Parser;
 use log::info;
 use std::sync::{Arc, OnceLock};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
+
+/// 命令行参数
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Cli {
+    /// 如果设置，则生成随机公钥而不是从文件读取
+    #[arg(long)]
+    pub random_key: bool,
+}
+
+/// 全局命令行参数实例
+pub static ARGS: OnceLock<Cli> = OnceLock::new();
 
 mod chunk;
 mod core;
@@ -30,6 +43,9 @@ pub fn get_socket() -> &'static Arc<UdpSocket> {
 ///
 /// 返回值：`anyhow::Result<()>` 执行结果
 fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+    ARGS.set(cli).expect("命令行参数设置失败");
+
     logger::init_logger();
 
     let runtime = tokio::runtime::Builder::new_multi_thread()

@@ -1,9 +1,10 @@
-#[allow(unused)]
+use crate::ARGS;
 use ed25519_dalek::SigningKey;
 use rand::TryRngCore;
 use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::sync::OnceLock;
+use log::info;
 
 /// 全局签名密钥实例，使用 `OnceLock` 实现懒初始化。
 static PUBKEY: OnceLock<SigningKey> = OnceLock::new();
@@ -14,7 +15,26 @@ static PUBKEY: OnceLock<SigningKey> = OnceLock::new();
 ///
 /// 返回值：`SigningKey` 签名密钥的克隆
 pub fn get_key() -> SigningKey {
-    PUBKEY.get_or_init(get_key_from_file).clone()
+    PUBKEY
+        .get_or_init(|| {
+            if ARGS.get().unwrap().random_key {
+                info!("使用随机生成的key");
+                return generate_random_key().expect("生成随机key失败");
+            }
+            get_key_from_file()
+        })
+        .clone()
+}
+
+/// 生成一个随机的签名密钥，不保存到文件。
+fn generate_random_key() -> Result<SigningKey> {
+    let mut csprng = OsRng;
+    let secret_bytes: [u8; 32] = {
+        let mut buf = [0_u8; 32];
+        csprng.try_fill_bytes(&mut buf)?;
+        buf
+    };
+    Ok(SigningKey::from_bytes(&secret_bytes))
 }
 
 /// 获取配置目录路径。
