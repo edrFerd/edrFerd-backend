@@ -1,5 +1,5 @@
 <script setup>
-import {ref, computed, onMounted, onUnmounted} from "vue";
+import {ref, computed} from "vue";
 
 const message = ref('')
 const worldData = ref(null)
@@ -109,89 +109,6 @@ async function callTestSend() {
     console.error('Error calling test_send:', error)
   }
 }
-
-// WebSocket 相关状态
-const wsConnected = ref(false)
-const wsMessages = ref([])
-const wsMessage = ref('')
-const ws = ref(null)
-
-// WebSocket 连接函数
-function connectWebSocket() {
-  try {
-    ws.value = new WebSocket('ws://127.0.0.1:1416/ws')
-    
-    ws.value.onopen = () => {
-      wsConnected.value = true
-      addWsMessage('系统', '已连接到 WebSocket 服务器')
-      console.log('WebSocket 连接已建立')
-    }
-    
-    ws.value.onmessage = (event) => {
-      addWsMessage('服务器', event.data)
-      console.log('收到消息:', event.data)
-    }
-    
-    ws.value.onclose = () => {
-      wsConnected.value = false
-      addWsMessage('系统', 'WebSocket 连接已断开')
-      console.log('WebSocket 连接已断开')
-    }
-    
-    ws.value.onerror = (error) => {
-      addWsMessage('系统', `WebSocket 错误: ${error}`)
-      console.error('WebSocket 错误:', error)
-    }
-  } catch (error) {
-    addWsMessage('系统', `连接失败: ${error.message}`)
-    console.error('WebSocket 连接失败:', error)
-  }
-}
-
-// 断开 WebSocket 连接
-function disconnectWebSocket() {
-  if (ws.value) {
-    ws.value.close()
-    ws.value = null
-  }
-}
-
-// 发送 WebSocket 消息
-function sendWebSocketMessage() {
-  if (ws.value && wsConnected.value && wsMessage.value.trim()) {
-    ws.value.send(wsMessage.value)
-    addWsMessage('客户端', wsMessage.value)
-    wsMessage.value = ''
-  }
-}
-
-// 添加消息到消息列表
-function addWsMessage(sender, content) {
-  wsMessages.value.push({
-    sender,
-    content,
-    timestamp: new Date().toLocaleTimeString()
-  })
-  // 保持最多 50 条消息
-  if (wsMessages.value.length > 50) {
-    wsMessages.value.shift()
-  }
-}
-
-// 清空消息列表
-function clearMessages() {
-  wsMessages.value = []
-}
-
-// 组件挂载时自动连接 WebSocket
-onMounted(() => {
-  connectWebSocket()
-})
-
-// 组件卸载时断开连接
-onUnmounted(() => {
-  disconnectWebSocket()
-})
 </script>
 
 <template>
@@ -227,48 +144,6 @@ onUnmounted(() => {
         <div v-for="block in sortedWorldData" :key="block.point" class="block-card">
           <p><strong>坐标:</strong> {{ block.point }}</p>
           <p><strong>类型:</strong> {{ block.info.type_id }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="action-section">
-      <h2>WebSocket 连接</h2>
-      <div class="ws-status">
-        <p>连接状态: 
-          <span :class="wsConnected ? 'status-connected' : 'status-disconnected'">
-            {{ wsConnected ? '已连接' : '未连接' }}
-          </span>
-        </p>
-        <div class="ws-controls">
-          <button @click="connectWebSocket" :disabled="wsConnected">连接</button>
-          <button @click="disconnectWebSocket" :disabled="!wsConnected">断开</button>
-        </div>
-      </div>
-      
-      <div v-if="wsConnected" class="ws-input-section">
-        <input 
-          v-model="wsMessage" 
-          type="text" 
-          placeholder="输入消息内容" 
-          @keyup.enter="sendWebSocketMessage"
-        />
-        <button @click="sendWebSocketMessage" :disabled="!wsMessage.trim()">发送消息</button>
-      </div>
-      
-      <div class="ws-message-section">
-        <div class="ws-message-header">
-          <h3>消息记录</h3>
-          <button @click="clearMessages" class="clear-btn">清空</button>
-        </div>
-        <div class="ws-message-list" v-if="wsMessages.length > 0">
-          <div v-for="msg in wsMessages" :key="msg.timestamp" class="ws-message">
-            <span class="message-time">{{ msg.timestamp }}</span>
-            <span :class="'message-sender-' + msg.sender.toLowerCase()">{{ msg.sender }}:</span>
-            <span class="message-content">{{ msg.content }}</span>
-          </div>
-        </div>
-        <div v-else class="no-messages">
-          <p>暂无消息</p>
         </div>
       </div>
     </div>
@@ -380,105 +255,5 @@ button:disabled {
 
 .block-card strong {
   color: #b0b0b0;
-}
-
-.ws-message-list {
-  margin-top: 15px;
-  padding: 15px;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  background-color: #2a2a2a;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.ws-message {
-  margin-bottom: 10px;
-  color: #e0e0e0;
-}
-
-.ws-message strong {
-  color: #b0b0b0;
-}
-
-.ws-status {
-  margin-bottom: 15px;
-}
-
-.ws-controls {
-  margin-top: 10px;
-}
-
-.ws-input-section {
-  margin-top: 15px;
-}
-
-.ws-message-section {
-  margin-top: 15px;
-}
-
-.ws-message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.ws-message-header h3 {
-  color: #f0f0f0;
-}
-
-.clear-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.clear-btn:hover {
-  background-color: #a82333;
-  border-color: #dc3545;
-}
-
-.no-messages {
-  padding: 15px;
-  text-align: center;
-  color: #999;
-}
-
-.status-connected {
-  color: #2ecc71;
-}
-
-.status-disconnected {
-  color: #e74c3c;
-}
-
-.message-time {
-  font-size: 12px;
-  color: #999;
-  margin-right: 5px;
-}
-
-.message-sender-client {
-  color: #4da3ff;
-  font-weight: 500;
-}
-
-.message-sender-server {
-  color: #ff6b7a;
-  font-weight: 500;
-}
-
-.message-sender-系统 {
-  color: #ffc107;
-  font-weight: 500;
-}
-
-.message-content {
-  font-size: 14px;
-  color: #e0e0e0;
-  margin-left: 5px;
 }
 </style>

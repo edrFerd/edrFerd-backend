@@ -19,7 +19,7 @@ pub struct BlockWithTime {
     cost: u64,
 }
 
-async fn server() -> Result<()> {
+async fn debug_server() -> Result<()> {
     let cors = CorsLayer::very_permissive();
 
     let app = Router::new()
@@ -107,7 +107,7 @@ pub async fn send_block_with_time(Json(data): Json<BlockWithTime>) -> String {
 }
 
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {
-    let task = tokio::spawn(server());
+    let task = tokio::spawn(debug_server());
     stop_receiver.await?;
     Ok(task)
 }
