@@ -23,12 +23,18 @@ def get_world_state():
     """获取当前游戏世界的状态。返回所有方块的列表。
     每个方块都是一个字典，包含 'point'（x, y, z 坐标）和 'info'（block_id 等信息）。
     """
-    print("正在获取世界状态...")
+    url = f"{FRONTEND_SERVER_URL}/known_world_state"
+    print(f"正在获取世界状态... URL: {url}")
     try:
-        response = requests.get(f"{FRONTEND_SERVER_URL}/known_world_state")
+        response = requests.get(url)
+        print(f"响应状态码: {response.status_code}")
         response.raise_for_status()
-        return json.dumps(response.json())
+        data = response.json()
+        print(f"获取到世界数据: {len(data) if isinstance(data, list) else '非列表类型'} 个元素")
+        print(f"响应数据的前 200 个字符: {str(data)[:200]}...")
+        return json.dumps(data)
     except requests.exceptions.RequestException as e:
+        print(f"请求失败: {e}")
         return json.dumps({"error": str(e)})
 
 
@@ -36,31 +42,44 @@ def set_block(x: int, y: int, z: int, block_id: str):
     """在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。
     有效的 block_id 值包括：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。
     """
+    # 根据 test_frontend 中的示例，使用 /set_block 而不是 /set_block_once
+    url = f"{FRONTEND_SERVER_URL}/set_block"
+    payload = {
+        "duration": 100000,  # 根据 test_frontend 中的示例，使用一个较长的持续时间
+        "x": x,
+        "y": y,
+        "z": z,
+        "info": {"type_id": block_id}
+    }
     print(f"正在坐标 ({x}, {y}, {z}) 放置方块 {block_id}...")
+    print(f"请求 URL: {url}")
+    print(f"请求载荷: {json.dumps(payload, indent=2)}")
     try:
-        payload = {
-            "duration": 100000,  # 根据 set_block_once 的逻辑，使用一个较长的持续时间
-            "x": x,
-            "y": y,
-            "z": z,
-            "info": {"type_id": block_id}
-        }
-        response = requests.post(f"{FRONTEND_SERVER_URL}/set_block_once", json=payload)
+        response = requests.post(url, json=payload)
+        print(f"响应状态码: {response.status_code}")
+        print(f"响应内容: {response.text}")
         response.raise_for_status()
-        return json.dumps({"status": "OK"})
+        return json.dumps({"status": "OK", "response": response.text})
     except requests.exceptions.RequestException as e:
+        print(f"请求失败: {e}")
         return json.dumps({"error": str(e)})
 
 
 def remove_block(x: int, y: int, z: int):
     """移除给定坐标 (x, y, z) 的方块。"""
+    url = f"{FRONTEND_SERVER_URL}/remove_block"
+    payload = {"x": x, "y": y, "z": z}
     print(f"正在移除坐标 ({x}, {y}, {z}) 的方块...")
+    print(f"请求 URL: {url}")
+    print(f"请求载荷: {json.dumps(payload, indent=2)}")
     try:
-        payload = {"x": x, "y": y, "z": z}
-        response = requests.post(f"{FRONTEND_SERVER_URL}/remove_block", json=payload)
+        response = requests.post(url, json=payload)
+        print(f"响应状态码: {response.status_code}")
+        print(f"响应内容: {response.text}")
         response.raise_for_status()
-        return json.dumps({"status": "OK"})
+        return json.dumps({"status": "OK", "response": response.text})
     except requests.exceptions.RequestException as e:
+        print(f"请求失败: {e}")
         return json.dumps({"error": str(e)})
 
 
@@ -86,7 +105,7 @@ def run_conversation():
         "你的目标是自由修改世界，做出一些有意义的建筑"
         "你可以查看世界状态、放置方块和移除方块。"
         "你还有一个“声明”字典来记住你的计划。"
-        "注意，每个声明的创建都需要一定的算力作为代价。所以请不要选择太大的duraction"
+        "注意，每个声明的创建都需要一定的算力作为代价。所以请不要选择太大的duraction，不能超过50"
         "可用的方块类型有：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。"
         "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
     )
