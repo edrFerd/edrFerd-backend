@@ -54,7 +54,7 @@ pub async fn broadcast_by_udp<T: serde::Serialize>(data: &T) -> anyhow::Result<(
     Ok(())
 }
 
-pub async fn get_salt_from_injective() -> BlakeHash {
+pub async fn get_salt_from_injective() -> String {
     static DOWNLOAD_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         reqwest::ClientBuilder::new().build().expect("faild to build reqwest client")
     });
@@ -62,14 +62,21 @@ pub async fn get_salt_from_injective() -> BlakeHash {
     let mut hasher = blake3::Hasher::new();
     let str = match DOWNLOAD_CLIENT.get(INJECTIVE_URL).send().await {
         Ok(d) => {
-            format!("{d:?}")
+            match d.text().await {
+                Ok(s) => {
+                    s
+                }
+                Err(e) => {
+                    e.to_string()
+                }
+            }
         }
         Err(e) => {
             e.to_string()
         }
     };
     hasher.update(str.as_bytes());
-    hasher.finalize()
+    hasher.finalize().to_hex().to_string()
 }
 
 /// 发送区块解释到网络。
@@ -83,8 +90,9 @@ pub async fn get_salt_from_injective() -> BlakeHash {
 /// 返回值：`anyhow::Result<()>` 发送结果
 pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Result<()> {
     let mut rand = 0_u64;
+    let salt = get_salt_from_injective().await;
     loop {
-        let one = ChunkData::new(difficult, block.clone(), "some aaaa".to_string(), rand);
+        let one = ChunkData::new(difficult, block.clone(), salt.clone(), rand);
         let hash = one.pow();
         if cmp_hash(&hash, &difficult).is_le() {
             break;
@@ -102,9 +110,10 @@ pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Res
     let start_tick = std::time::Instant::now();
     let last_hash = blake3::hash("nice hash".as_bytes());
     let mut smallest: blake3::Hash = blake3::Hash::from_bytes([255; 32]);
-    let mut the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);
+    let salt = get_salt_from_injective().await;
+    let mut the_chunk = ChunkData::new(last_hash, block.clone(), salt.clone(), seed);
     loop {
-        the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);
+        the_chunk = ChunkData::new(last_hash, block.clone(), salt.clone(), seed);
         let hash = the_chunk.pow();
         if cmp_hash(&hash, &smallest).is_le() {
             smallest = hash;
