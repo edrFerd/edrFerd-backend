@@ -100,7 +100,7 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
         }
         rand += 1;
     }
-    let chunk_data = ChunkData::new(last_hash, block, "some aaaa".to_string(), rand);
+    let chunk_data = ChunkData::new(last_hash, block, salt.clone(), rand);
     let chunk = Chunk::new(chunk_data);
     *LAST_HASH.lock().await = chunk.pow;
     broadcast_by_udp(&chunk).await?;
