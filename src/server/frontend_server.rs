@@ -41,7 +41,6 @@ pub async fn tick_update_vec(
         buf
     };
     events.into()
-
 }
 
 pub async fn known_world_state(

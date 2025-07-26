@@ -16,7 +16,7 @@ pub struct Block {
     pub point: BlockPoint,
     pub block_info: BlockInfo,
 }
-impl Block{
+impl Block {
     pub fn new(point: BlockPoint, block_info: BlockInfo) -> Self {
         Self { point, block_info }
     }

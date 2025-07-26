@@ -1,7 +1,8 @@
-use crate::world::{WorldMapType, GLOBAL_WORLD};
 use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use crate::libs::key::get_key;
+use crate::server::API_PORT;
+use crate::world::{GLOBAL_WORLD, WorldMapType};
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
@@ -89,7 +90,11 @@ async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
                 // 校验一下pub key不是自己的
                 let self_pub_key = get_key().verifying_key();
                 if c.pub_key != self_pub_key {
-                    broadcast_by_udp(&json!(["pong"])).await?;
+                    let res = InitResponed {
+                        host_port: API_PORT,
+                        listen_only: false,
+                    };
+                    broadcast_by_udp(&res).await?;
                 } else {
                     // 自己的广播，忽略
                 }

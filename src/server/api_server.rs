@@ -1,7 +1,7 @@
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use crate::libs::key::get_key;
 use crate::server::API_PORT;
-use crate::world::{BlockWithPubKey, WorldMapType, GLOBAL_WORLD};
+use crate::world::{BlockWithPubKey, GLOBAL_WORLD, WorldMapType};
 
 use anyhow::Result;
 use axum::routing::get;

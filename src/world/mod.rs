@@ -4,7 +4,7 @@ use crate::libs::data_struct::BlockPoint;
 use crate::libs::data_struct::{Block, BlockInfo};
 use foldhash::HashMapExt;
 use log::info;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::sync::{LazyLock, OnceLock};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;

@@ -1,5 +1,5 @@
-use tokio::sync::{mpsc, oneshot};
 use crate::world::work::BlockUpdatePack;
+use tokio::sync::{mpsc, oneshot};
 
 pub mod api_server;
 pub mod debug_server;
@@ -19,7 +19,10 @@ pub async fn start_all_server(
     let (debug_sender, debug_receiver) = oneshot::channel();
     let debug_waiter = tokio::spawn(debug_server::web_main(debug_receiver));
     let (frontend_sender, frontend_receiver) = oneshot::channel();
-    let frontend_waiter = tokio::spawn(frontend_server::web_main(frontend_receiver, work_event_recv));
+    let frontend_waiter = tokio::spawn(frontend_server::web_main(
+        frontend_receiver,
+        work_event_recv,
+    ));
     let (api_sender, api_receiver) = oneshot::channel();
     let api_waiter = tokio::spawn(api_server::web_main(api_receiver));
 
