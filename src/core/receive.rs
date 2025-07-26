@@ -1,3 +1,4 @@
+use crate::world::{WorldMapType, GLOBAL_WORLD};
 use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use crate::libs::key::get_key;
@@ -101,10 +102,21 @@ async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
                     let url = {
                         let mut url = addr;
                         url.set_port(r.host_port);
-                        // url.to_string()
                         format!("http://{}:{}/world", url.ip(), url.port())
                     };
-                    reqwest::Client::new().post(url).send().await?;
+                    let data = reqwest::Client::new().get(url).send().await?;
+                    match data.json::<WorldMapType>().await {
+                        Ok(new_map) => {
+                            // 初始化
+                            let world = GLOBAL_WORLD.get().unwrap();
+                            let mut map = world.lock().await;
+                            map.world = new_map;
+                            info!("成功从 {addr} 获取了世界状态");
+                        }
+                        Err(e) => {
+                            warn!("无法解析获取世界状态，{e}");
+                        }
+                    }
                 } else {
                     return Ok(());
                 }

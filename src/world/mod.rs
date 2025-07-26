@@ -4,11 +4,12 @@ use crate::libs::data_struct::BlockPoint;
 use crate::libs::data_struct::{Block, BlockInfo};
 use foldhash::HashMapExt;
 use log::info;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::sync::{LazyLock, OnceLock};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
-#[derive(Debug, Clone, Serialize)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockInfoWithPubKey {
     block_info: BlockInfo,
     pub_key: ed25519_dalek::VerifyingKey,
@@ -21,7 +22,7 @@ impl BlockInfoWithPubKey {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockWithPubKey {
     block: Block,
     pub_key: ed25519_dalek::VerifyingKey,
@@ -32,10 +33,10 @@ impl BlockWithPubKey {
     }
 }
 /// 世界地图类型，键为 `BlockPoint`，值为 `BlockInfo`。
-type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfoWithPubKey>;
+pub type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfoWithPubKey>;
 
 /// 全局的世界结构，包含世界地图数据。
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct World {
     pub world: WorldMapType,
 }

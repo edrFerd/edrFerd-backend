@@ -1,11 +1,12 @@
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use crate::libs::key::get_key;
 use crate::server::API_PORT;
-use crate::world::BlockWithPubKey;
+use crate::world::{BlockWithPubKey, WorldMapType, GLOBAL_WORLD};
 
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
+use ed25519_dalek::VerifyingKey;
 use log::info;
 use tokio::sync::oneshot::Receiver;
 use tower_http::cors::CorsLayer;
@@ -16,14 +17,20 @@ use std::net::SocketAddr;
 async fn server() -> anyhow::Result<()> {
     let cors = CorsLayer::very_permissive();
     let app: Router = Router::new()
-        // .route("/known_world_state", get(known_world_state))
-        // .route("/pubkey", get(get_pubkey))
+        .route("/world", get(send_world))
+        .route("/pubkey", get(crate::server::frontend_server::get_pubkey))
         .layer(cors);
     let addr = SocketAddr::from(([0, 0, 0, 0], API_PORT));
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!("正在监听 {addr}作为前端服务器");
+    info!("正在监听 {addr} 作为 api 服务器");
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+pub async fn send_world() -> Json<WorldMapType> {
+    let world = GLOBAL_WORLD.get().unwrap();
+    let world_map = world.lock().await;
+    Json(world_map.world.clone())
 }
 
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {

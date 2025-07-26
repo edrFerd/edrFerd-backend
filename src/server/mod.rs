@@ -16,15 +16,18 @@ pub async fn start_all_server(
     work_event_recv: mpsc::UnboundedReceiver<()>,
 ) -> anyhow::Result<()> {
     let (debug_sender, debug_receiver) = oneshot::channel();
-    debug_server::web_main(debug_receiver).await?;
+    let debug_waiter = tokio::spawn(debug_server::web_main(debug_receiver));
     let (frontend_sender, frontend_receiver) = oneshot::channel();
-    frontend_server::web_main(frontend_receiver, work_event_recv).await?;
+    let frontend_waiter = tokio::spawn(frontend_server::web_main(frontend_receiver, work_event_recv));
     let (api_sender, api_receiver) = oneshot::channel();
-    api_server::web_main(api_receiver).await?;
+    let api_waiter = tokio::spawn(api_server::web_main(api_receiver));
 
     recv.await?;
     frontend_sender.send(()).ok();
     debug_sender.send(()).ok();
     api_sender.send(()).ok();
+    frontend_waiter.await?;
+    debug_waiter.await?;
+    api_waiter.await?;
     Ok(())
 }
