@@ -9,17 +9,6 @@ const blockZ = ref(0)
 const blockType = ref('default_block')
 const blockTime = ref(1000)
 
-// 新增：目标地址选择功能
-const targetHost = ref('localhost')
-const debugPort = 1415
-const frontendPort = 1416
-const consensusPort = 1417
-
-// 计算属性：根据选择的主机和端口生成完整的API地址
-const debugApiBase = computed(() => `http://${targetHost.value}:${debugPort}`)
-const frontendApiBase = computed(() => `http://${targetHost.value}:${frontendPort}`)
-const consensusApiBase = computed(() => `http://${targetHost.value}:${consensusPort}`)
-
 const sortedWorldData = computed(() => {
   if (!worldData.value) {
     return [];
@@ -38,7 +27,7 @@ const sortedWorldData = computed(() => {
 
 async function showWorld() {
   try {
-    const response = await fetch(`${consensusApiBase.value}/show_world`)
+    const response = await fetch('http://127.0.0.1:1417/show_world')
     const data = await response.json()
     worldData.value = data
     console.log(data)
@@ -61,82 +50,72 @@ async function sendBlock() {
   };
 
   try {
-    const response = await fetch(`${debugApiBase.value}/send_block`, {
+    const response = await fetch('http://127.0.0.1:1417/send_block', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(block),
     });
-
-    if (response.ok) {
-      const data = await response.text();
-      message.value = `Block sent successfully: ${data}`;
-      console.log('Block sent:', data);
-    } else {
-      message.value = `Error: ${response.status} ${response.statusText}`;
-    }
+    const data = await response.text();
+    message.value = data;
+    console.log(data);
   } catch (error) {
     message.value = `Error: ${error.message}`;
-    console.error('Error sending block:', error);
+    console.error('Error calling send_block:', error);
   }
 }
 
 async function sendBlockWithTime() {
-  const block = {
-    point: {
-      x: parseInt(blockX.value),
-      y: parseInt(blockY.value),
-      z: parseInt(blockZ.value),
+  const data = {
+    block: {
+      point: {
+        x: parseInt(blockX.value),
+        y: parseInt(blockY.value),
+        z: parseInt(blockZ.value),
+      },
+      block_info: {
+        type_id: blockType.value,
+      },
     },
-    block_info: {
-      type_id: blockType.value,
-    },
-    time: parseInt(blockTime.value),
+    cost: parseInt(blockTime.value)
   };
 
   try {
-    const response = await fetch(`${debugApiBase.value}/send_block_with_time`, {
+    const response = await fetch('http://127.0.0.1:1417/send_block_with_time', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(block),
+      body: JSON.stringify(data),
     });
-
-    if (response.ok) {
-      const data = await response.text();
-      message.value = `Block with time sent successfully: ${data}`;
-      console.log('Block with time sent:', data);
-    } else {
-      message.value = `Error: ${response.status} ${response.statusText}`;
-    }
+    const result = await response.text();
+    message.value = result;
+    console.log(result);
   } catch (error) {
     message.value = `Error: ${error.message}`;
-    console.error('Error sending block with time:', error);
+    console.error('Error calling send_block_with_time:', error);
   }
 }
 
 async function callTestSend() {
   try {
-    const response = await fetch(`${debugApiBase.value}/test_send`, {
-      method: 'POST',
-    });
-    const data = await response.text();
-    message.value = `Test send result: ${data}`;
-    console.log('Test send result:', data);
+    const response = await fetch('http://127.0.0.1:1417/test_send')
+    const data = await response.text()
+    message.value = data
+    console.log(data)
   } catch (error) {
-    message.value = `Error: ${error.message}`;
-    console.error('Error calling test_send:', error);
+    message.value = `Error: ${error.message}`
+    console.error('Error calling test_send:', error)
   }
 }
 
 async function getPubKey() {
   try {
-    const response = await fetch(`${frontendApiBase.value}/pubkey`);
+    const response = await fetch('http://127.0.0.1:1416/pubkey');
     const data = await response.text();
-    message.value = `Public key: ${data}`;
-    console.log('Public key:', data);
+    message.value = data;
+    console.log(data);
   } catch (error) {
     message.value = `Error: ${error.message}`;
     console.error('Error calling get_pubkey:', error);
@@ -147,21 +126,6 @@ async function getPubKey() {
 <template>
   <div>
     <h1>EdrFerd 测试面板</h1>
-
-    <!-- 新增：目标地址选择区域 -->
-    <div class="action-section">
-      <h2>服务器配置</h2>
-      <div class="form-group">
-        <label>目标主机地址: 
-          <input v-model="targetHost" type="text" placeholder="localhost" />
-        </label>
-      </div>
-      <div class="server-info">
-        <p><strong>Debug API:</strong> {{ debugApiBase }}</p>
-        <p><strong>Frontend API:</strong> {{ frontendApiBase }}</p>
-        <p><strong>Consensus API:</strong> {{ consensusApiBase }}</p>
-      </div>
-    </div>
 
     <div class="action-section">
       <h2>通用操作</h2>
@@ -305,24 +269,5 @@ button:disabled {
 
 .block-card strong {
   color: #b0b0b0;
-}
-
-.server-info {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #1a1a1a;
-  border-radius: 4px;
-  border: 1px solid #3a3a3a;
-}
-
-.server-info p {
-  margin: 5px 0;
-  font-family: monospace;
-  font-size: 0.9em;
-  color: #b0b0b0;
-}
-
-.server-info strong {
-  color: #e0e0e0;
 }
 </style>
