@@ -33,6 +33,7 @@ fn main() -> anyhow::Result<()> {
     logger::init_logger();
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(8)
         .enable_all()
         .build()?;
     info!("启动异步运行时");
