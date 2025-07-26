@@ -44,7 +44,7 @@ async function sendBlock() {
       y: parseInt(blockY.value),
       z: parseInt(blockZ.value),
     },
-    block_appearance: {
+    block_info: {
       type_id: blockType.value,
     },
   };
@@ -74,7 +74,7 @@ async function sendBlockWithTime() {
         y: parseInt(blockY.value),
         z: parseInt(blockZ.value),
       },
-      block_appearance: {
+      block_info: {
         type_id: blockType.value,
       },
     },

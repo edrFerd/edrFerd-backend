@@ -45,7 +45,7 @@ impl World {
             .iter()
             .map(|(point, block_info)| Block {
                 point: point.clone(),
-                block_appearance: block_info.clone(),
+                block_info: block_info.clone(),
             })
             .collect()
     }

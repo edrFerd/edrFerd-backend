@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Hash, Deserialize, Serialize)]
 pub struct Block {
     pub point: BlockPoint,
-    pub block_appearance: BlockInfo,
+    pub block_info: BlockInfo,
 }
 
 /// 三维空间中的区块位置坐标。
