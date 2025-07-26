@@ -91,7 +91,8 @@ pub async fn set_block(Json(params): Json<SetBlockParams>) -> Json<&'static str>
     add_new_maintain_block(
         BlockPoint::new(params.x, params.y, params.z),
         MaintainBlock::new(params.duration, params.info),
-    ).await;
+    )
+    .await;
     Json("OK")
 }
 
