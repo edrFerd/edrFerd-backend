@@ -1,7 +1,7 @@
 pub mod work;
 
-use crate::libs::data_struct::BlockInfo;
 use crate::libs::data_struct::BlockPoint;
+use crate::libs::data_struct::{Block, BlockInfo};
 use foldhash::HashMapExt;
 use log::info;
 use serde::Serialize;
@@ -39,6 +39,15 @@ impl World {
     pub fn set_block(&mut self, block_point: BlockPoint, block_info: BlockInfo) {
         info!("已设置方块: 点 {:?}, 信息: {:?}", &block_point, &block_info);
         self.world.insert(block_point, block_info);
+    }
+    pub fn as_block(&self) -> Vec<Block> {
+        self.world
+            .iter()
+            .map(|(point, block_info)| Block {
+                point: point.clone(),
+                block_info: block_info.clone(),
+            })
+            .collect()
     }
 }
 

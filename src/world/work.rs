@@ -101,7 +101,7 @@ async fn work(
         // 剩下的都在合法时间内，可以正常处理
         let chunk = chunk_with_time.chunk;
         let chunk_block_point = chunk.data.explanation.point;
-        let info_key = InfoKey::new(chunk.data.pub_key, chunk.data.explanation.block_appearance);
+        let info_key = InfoKey::new(chunk.data.pub_key, chunk.data.explanation.block_info);
         let inner: &mut BlockInfoMap = chunk_map.entry(chunk_block_point).or_default();
         match inner.get_mut(&info_key) {
             Some(pow) => {

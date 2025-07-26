@@ -53,7 +53,7 @@ pub async fn test_send() -> String {
     info!("触发 test_send");
     let block = Block {
         point: BlockPoint::new(1, 2, 3),
-        block_appearance: BlockInfo::new("test_block".to_string()),
+        block_info: BlockInfo::new("test_block".to_string()),
     };
     let difficult: BlakeHash = blake3::hash(b"test difficulty");
     match send_explanation(block, difficult).await {

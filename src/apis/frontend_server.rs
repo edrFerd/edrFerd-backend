@@ -1,4 +1,4 @@
-use crate::libs::data_struct::BlockInfo;
+use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -20,14 +20,10 @@ async fn server() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn known_world_state() -> Json<HashMap<String, BlockInfo>> {
+pub async fn known_world_state() -> Json<Vec<Block>> {
     info!("触发 known_world_state");
     let world = crate::world::get_world().lock().await;
-    let mut serializable_world = HashMap::new();
-    for (point, info) in world.world.iter() {
-        serializable_world.insert(point.to_string(), info.clone());
-    }
-    Json(serializable_world)
+    world.as_block().into()
 }
 
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {
