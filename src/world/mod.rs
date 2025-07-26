@@ -42,7 +42,7 @@ pub struct World {
 }
 
 /// 全局的 `World` 实例，使用 `OnceLock` 实现懒初始化。
-pub static GLOBAL_WORLD: OnceLock<Mutex<World>> = OnceLock::new();
+static GLOBAL_WORLD: OnceLock<Mutex<World>> = OnceLock::new();
 
 impl World {
     /// 创建一个新的 `World` 实例，内部包含空的世界地图。

@@ -1,7 +1,7 @@
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use crate::libs::key::get_key;
 use crate::server::API_PORT;
-use crate::world::{BlockWithPubKey, GLOBAL_WORLD, WorldMapType};
+use crate::world::{BlockWithPubKey, WorldMapType, get_world};
 
 use anyhow::Result;
 use axum::routing::get;
@@ -28,7 +28,7 @@ async fn server() -> anyhow::Result<()> {
 }
 
 pub async fn send_world() -> Json<WorldMapType> {
-    let world = GLOBAL_WORLD.get().unwrap();
+    let world = get_world();
     let world_map = world.lock().await;
     Json(world_map.world.clone())
 }

@@ -2,7 +2,7 @@ use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use crate::libs::key::get_key;
 use crate::server::API_PORT;
-use crate::world::{GLOBAL_WORLD, WorldMapType};
+use crate::world::{WorldMapType, get_world};
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
@@ -113,7 +113,7 @@ async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
                     match data.json::<WorldMapType>().await {
                         Ok(new_map) => {
                             // 初始化
-                            let world = GLOBAL_WORLD.get().unwrap();
+                            let world = get_world();
                             let mut map = world.lock().await;
                             map.world = new_map;
                             info!("成功从 {addr} 获取了世界状态");
