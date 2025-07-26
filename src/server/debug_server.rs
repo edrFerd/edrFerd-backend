@@ -1,5 +1,6 @@
 use crate::core::send::{send_explanation, send_explation_in_time};
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
+use crate::server::DEBUG_PORT;
 
 use anyhow::Result;
 use axum::extract::Query;
@@ -32,7 +33,7 @@ async fn debug_server() -> Result<()> {
         .route("/send_block_with_time", post(send_block_with_time))
         .layer(cors);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 1415));
+    let addr = SocketAddr::from(([0, 0, 0, 0], DEBUG_PORT));
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!("正在监听 {addr}作为服务器");

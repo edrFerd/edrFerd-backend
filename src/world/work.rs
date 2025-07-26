@@ -7,10 +7,9 @@ use ed25519_dalek::VerifyingKey;
 use foldhash::HashMapExt;
 
 use log::{debug, info, trace, warn};
-use std::any::Any;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc;
 
 /// 工作的间隙，单位为毫秒
 /// 目前是20tick/s (50ms)
@@ -19,7 +18,10 @@ const WORK_INTERVAL_MS: i64 = 50;
 /// 异步工作循环，按固定时间间隔执行任务。
 ///
 /// 每次循环会等待 `WORK_INTERVAL_MS` 毫秒后再继续。
-pub async fn work_loop(mut receiver: UnboundedReceiver<ChunkWithTime>) {
+pub async fn work_loop(
+    mut receiver: mpsc::UnboundedReceiver<ChunkWithTime>,
+    mut sender: mpsc::UnboundedSender<()>,
+) {
     info!("启动工作循环，间隔: {WORK_INTERVAL_MS} 毫秒");
     let mut current_tick = chrono::Utc::now();
     let mut last_tick = current_tick - chrono::Duration::milliseconds(WORK_INTERVAL_MS);

@@ -1,6 +1,4 @@
 #![allow(unused)]
-use crate::apis::debug_server::web_main;
-use crate::apis::frontend_server::web_main as frontend_web_main;
 
 use log::info;
 use std::sync::{Arc, OnceLock};
@@ -8,11 +6,11 @@ use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
-mod apis;
 mod chunk;
 mod core;
 mod libs;
 mod logger;
+mod server;
 mod world;
 
 /// 服务版本号，通过环境变量 `CARGO_PKG_VERSION` 获取。
@@ -53,8 +51,7 @@ async fn async_main_logic() -> anyhow::Result<()> {
     let socket = UdpSocket::bind(format!("0.0.0.0:{PORT}")).await?;
     socket.set_broadcast(true);
     GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
-    let (send, recv) = oneshot::channel();
-    let (frontend_send, frontend_recv) = oneshot::channel();
+    let (server_send, server_recv) = oneshot::channel();
 
     // 创建数据处理channel
     let (chunk_sender, chunk_receiver) = mpsc::unbounded_channel();
@@ -63,23 +60,20 @@ async fn async_main_logic() -> anyhow::Result<()> {
     let receive_handle = tokio::spawn(core::receive::receive_loop(chunk_sender));
     log::info!("数据接收循环已启动");
 
+    let (work_sender, work_receiver) = mpsc::unbounded_channel();
     // 启动数据处理工作循环
-    let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
+    let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver, work_sender));
     log::info!("数据处理工作循环已启动");
     // 发送初始化信息
     core::send::send_init().await?;
 
-    let debug_waiter = tokio::spawn(web_main(recv));
-    let frontend_waiter = tokio::spawn(frontend_web_main(frontend_recv));
+    let server_waiter = tokio::spawn(server::start_all_server(server_recv, work_receiver));
     tokio::signal::ctrl_c().await.ok();
-    send.send(()).ok();
-    frontend_send.send(()).ok();
+    server_send.send(()).ok();
 
     // 优雅关闭各个任务
     receive_handle.abort();
     work_handle.abort();
-    debug_waiter.await.ok();
-    frontend_waiter.await.ok();
 
     log::info!("服务关闭");
     Ok(())

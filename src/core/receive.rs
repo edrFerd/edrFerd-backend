@@ -101,7 +101,8 @@ async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
                     let url = {
                         let mut url = addr;
                         url.set_port(r.host_port);
-                        url.to_string()
+                        // url.to_string()
+                        format!("http://{}:{}/world", url.host(), url.port())
                     };
                     reqwest::Client::new().post(url).send().await?;
                 } else {
