@@ -48,29 +48,29 @@ pub async fn test_send() -> String {
     match send_explanation(block, difficult).await {
         Ok(_) => {
             let msg = "成功发送共识包".to_string();
-            info!("{}", msg);
+            info!("{msg}");
             msg
         }
         Err(e) => {
-            let error_msg = format!("发送共识包失败: {:?}", e);
-            log::error!("{}", error_msg);
+            let error_msg = format!("发送共识包失败: {e:?}");
+            log::error!("{error_msg}");
             error_msg
         }
     }
 }
 
 pub async fn send_block_from_web(Json(block): Json<Block>) -> String {
-    info!("触发 send_block_from_web with block: {:?}", block);
+    info!("触发 send_block_from_web with block: {block:?}");
     let difficult: BlakeHash = blake3::hash(b"test difficulty");
     match send_explanation(block, difficult).await {
         Ok(_) => {
             let msg = "成功发送自定义共识包".to_string();
-            info!("{}", msg);
+            info!("{msg}");
             msg
         }
         Err(e) => {
-            let error_msg = format!("发送共识包失败: {:?}", e);
-            log::error!("{}", error_msg);
+            let error_msg = format!("发送共识包失败: {e:?}");
+            log::error!("{error_msg}");
             error_msg
         }
     }

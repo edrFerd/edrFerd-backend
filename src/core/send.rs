@@ -3,6 +3,7 @@ use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
 
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::time::Duration;
 
 use crate::chunk::{Chunk, ChunkData};
 use crate::libs::data_struct::Block;
@@ -31,15 +32,20 @@ impl InitBroadcast {
 
 pub async fn send_init() -> anyhow::Result<()> {
     let pack = InitBroadcast::new(false, PORT);
-    let msg = serde_json::to_string(&pack)?;
-    let socket = GLOBAL_SOCKET.get().unwrap();
     log::info!("准备发送初始化信息");
+    send_by_udp(&pack).await?;
+    log::info!("成功发送 init");
+    Ok(())
+}
+
+pub async fn send_by_udp<T: serde::Serialize>(data: &T) -> anyhow::Result<()> {
+    let socket = GLOBAL_SOCKET.get().unwrap();
+    let msg = serde_json::to_string(data)?;
     socket.set_broadcast(true)?;
 
     socket
         .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
         .await?;
-    log::info!("成功发送 init");
     Ok(())
 }
 
@@ -64,11 +70,28 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
     }
     let chunk_data = ChunkData::new(difficult, block, "some aaaa".to_string(), rand);
     let chunk = Chunk::new(chunk_data);
-    let json_str: String = serde_json::to_string(&chunk)?;
-    let socket = GLOBAL_SOCKET.get().unwrap();
-    socket
-        .send_to(json_str.as_bytes(), ("255.255.255.255", PORT))
-        .await?;
-    // TODO 把自己发的包也丢到receiver里面
+    send_by_udp(&chunk).await?;
+    Ok(())
+}
+
+pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Result<()> {
+    let mut seed = 0_u64;
+    let start_tick = std::time::Instant::now();
+    let last_hash = blake3::hash("nice hash".as_bytes());
+    let mut smallest: blake3::Hash = blake3::Hash::from_bytes([255;32]);
+    let mut the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);
+    loop {
+        the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);
+        let hash = the_chunk.pow();
+        if cmp_hash(&hash, &smallest).is_le() {
+            smallest = hash;
+        }
+        seed += 1;
+        if start_tick.elapsed() >= cost {
+            break;
+        }
+    }
+    // 发送
+    send_by_udp(&the_chunk).await?;
     Ok(())
 }
