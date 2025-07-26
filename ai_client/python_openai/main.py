@@ -13,8 +13,7 @@ client = openai.OpenAI(
 # --- 游戏服务器 API 配置 ---
 FRONTEND_SERVER_URL = "http://localhost:1416"
 
-# --- AI 状态 ---
-declarations = {}
+
 
 # --- 工具定义 ---
 
@@ -38,14 +37,20 @@ def get_world_state():
         return json.dumps({"error": str(e)})
 
 
-def set_block(x: int, y: int, z: int, block_id: str):
+def set_block(x: int, y: int, z: int, block_id: str, duration: int = 50):
     """在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。
     有效的 block_id 值包括：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。
+    duration 参数控制放置方块的持续时间（不能超过50）。
     """
-    # 根据 test_frontend 中的示例，使用 /set_block 而不是 /set_block_once
-    url = f"{FRONTEND_SERVER_URL}/set_block"
+    # 限制 duration 不能超过 50
+    if duration > 50:
+        duration = 50
+        print(f"警告：duration 被限制为 50")
+    
+
+    url = f"{FRONTEND_SERVER_URL}/set_block_once"
     payload = {
-        "duration": 100000,  # 根据 test_frontend 中的示例，使用一个较长的持续时间
+        "duration": duration,
         "x": x,
         "y": y,
         "z": z,
@@ -83,30 +88,12 @@ def remove_block(x: int, y: int, z: int):
         return json.dumps({"error": str(e)})
 
 
-def add_declaration(key: str, value: str):
-    """在 AI 的记忆中添加或更新一个声明。
-    用于 AI 记住他声明了哪些计划。
-    """
-    print(f"正在添加声明: {key} = {value}")
-    declarations[key] = value
-    return json.dumps({"status": "OK", "declarations": declarations})
-
-
-def view_declarations():
-    """查看 AI 做出的所有当前声明。"""
-    print("正在查看声明...")
-    return json.dumps(declarations)
-
-
 # --- 主循环 ---
 def run_conversation():
     initial_prompt = (
         "你是一个在3D方块世界中控制角色的AI代理。"
-        "你的目标是自由修改世界，做出一些有意义的建筑"
-        "你可以查看世界状态、放置方块和移除方块。"
-        "你还有一个“声明”字典来记住你的计划。"
-        "注意，每个声明的创建都需要一定的算力作为代价。所以请不要选择太大的duraction，不能超过50"
-        "可用的方块类型有：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。"
+        "你的目标是自由修改世界，做出一些有意义的建筑" 
+        "你可以查看世界状态、放置方块和移除方块。" 
         "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
     )
     messages = [{"role": "user", "content": initial_prompt}]
@@ -123,7 +110,7 @@ def run_conversation():
             "type": "function",
             "function": {
                 "name": "set_block",
-                "description": "在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。",
+                "description": "在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。可以指定 duration（持续时间，不能超过50）。",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -173,29 +160,6 @@ def run_conversation():
                 },
             },
         },
-        {
-            "type": "function",
-            "function": {
-                "name": "add_declaration",
-                "description": "在 AI 的记忆中添加或更新一个声明。",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "key": {"type": "string"},
-                        "value": {"type": "string"},
-                    },
-                    "required": ["key", "value"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "view_declarations",
-                "description": "查看 AI 做出的所有当前声明。",
-                "parameters": {"type": "object", "properties": {}, "required": []},
-            },
-        },
     ]
 
     while True:
@@ -215,8 +179,7 @@ def run_conversation():
                 "get_world_state": get_world_state,
                 "set_block": set_block,
                 "remove_block": remove_block,
-                "add_declaration": add_declaration,
-                "view_declarations": view_declarations,
+
             }
             messages.append(response_message)
 
