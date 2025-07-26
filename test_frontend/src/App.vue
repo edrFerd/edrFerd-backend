@@ -7,6 +7,7 @@ const blockX = ref(0)
 const blockY = ref(0)
 const blockZ = ref(0)
 const blockType = ref('default_block')
+const blockTime = ref(1000)
 
 const sortedWorldData = computed(() => {
   if (!worldData.value) {
@@ -62,6 +63,29 @@ async function sendBlock() {
   } catch (error) {
     message.value = `Error: ${error.message}`;
     console.error('Error calling send_block:', error);
+  }
+}
+
+async function sendBlockWithTime() {
+  const data = {
+    block: [parseInt(blockX.value), parseInt(blockY.value), parseInt(blockZ.value)],
+    cost: parseInt(blockTime.value)
+  };
+
+  try {
+    const response = await fetch('http://127.0.0.1:1415/send_block_with_time', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await response.text();
+    message.value = result;
+    console.log(result);
+  } catch (error) {
+    message.value = `Error: ${error.message}`;
+    console.error('Error calling send_block_with_time:', error);
   }
 }
 
@@ -180,7 +204,11 @@ onUnmounted(() => {
       <div class="form-group">
         <label>方块类型 ID: <input v-model="blockType" type="text" /></label>
       </div>
+      <div class="form-group">
+        <label>时间 (毫秒): <input v-model="blockTime" type="number" /></label>
+      </div>
       <button @click="sendBlock">发送自定义方块</button>
+      <button @click="sendBlockWithTime">发送指定耗时pow的方块</button>
     </div>
 
     <div class="action-section">
@@ -248,23 +276,29 @@ onUnmounted(() => {
   font-weight: 400;
 }
 
+body {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
 h1 {
   text-align: center;
-  color: #2c3e50;
+  color: #e0e0e0;
 }
 
 .action-section {
   margin-top: 20px;
   padding: 20px;
-  border: 1px solid #dfe4ea;
+  border: 1px solid #3a3a3a;
   border-radius: 8px;
-  background-color: #f8f9fa;
+  background-color: #1e1e1e;
 }
 
 .action-section h2 {
   margin-top: 0;
-  border-bottom: 2px solid #ced4da;
+  border-bottom: 2px solid #4a4a4a;
   padding-bottom: 10px;
+  color: #f0f0f0;
 }
 
 .form-group {
@@ -274,33 +308,43 @@ h1 {
 .form-group label {
   margin-right: 15px;
   font-weight: 500;
+  color: #d0d0d0;
 }
 
 input {
   padding: 8px;
-  border: 1px solid #ced4da;
+  border: 1px solid #4a4a4a;
   border-radius: 4px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
 }
 
 button {
   padding: 10px 15px;
-  border: none;
+  border: 1px solid #4a4a4a;
   border-radius: 5px;
-  background-color: #007bff;
-  color: white;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #3a3a3a;
+  border-color: #007bff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .server-message {
   margin-top: 20px;
   padding: 10px;
-  background-color: #e9ecef;
+  background-color: #2a2a2a;
   border-left: 5px solid #007bff;
+  color: #e0e0e0;
 }
 
 .world-display {
@@ -311,37 +355,40 @@ button:hover {
 }
 
 .block-card {
-  background-color: white;
+  background-color: #2a2a2a;
   padding: 15px;
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid #3a3a3a;
   flex-basis: 200px; /* Set a base width for each card */
   flex-grow: 1;
 }
 
 .block-card p {
   margin: 5px 0;
+  color: #e0e0e0;
 }
 
 .block-card strong {
-  color: #495057;
+  color: #b0b0b0;
 }
 
 .ws-message-list {
   margin-top: 15px;
   padding: 15px;
-  border: 1px solid #ced4da;
+  border: 1px solid #3a3a3a;
   border-radius: 6px;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background-color: #2a2a2a;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .ws-message {
   margin-bottom: 10px;
+  color: #e0e0e0;
 }
 
 .ws-message strong {
-  color: #495057;
+  color: #b0b0b0;
 }
 
 .ws-status {
@@ -367,6 +414,10 @@ button:hover {
   margin-bottom: 10px;
 }
 
+.ws-message-header h3 {
+  color: #f0f0f0;
+}
+
 .clear-btn {
   background-color: #dc3545;
   color: white;
@@ -377,13 +428,14 @@ button:hover {
 }
 
 .clear-btn:hover {
-  background-color: #c82333;
+  background-color: #a82333;
+  border-color: #dc3545;
 }
 
 .no-messages {
   padding: 15px;
   text-align: center;
-  color: #666;
+  color: #999;
 }
 
 .status-connected {
@@ -396,19 +448,28 @@ button:hover {
 
 .message-time {
   font-size: 12px;
-  color: #666;
+  color: #999;
   margin-right: 5px;
 }
 
 .message-sender-client {
-  color: #007bff;
+  color: #4da3ff;
+  font-weight: 500;
 }
 
 .message-sender-server {
-  color: #dc3545;
+  color: #ff6b7a;
+  font-weight: 500;
+}
+
+.message-sender-系统 {
+  color: #ffc107;
+  font-weight: 500;
 }
 
 .message-content {
   font-size: 14px;
+  color: #e0e0e0;
+  margin-left: 5px;
 }
 </style>

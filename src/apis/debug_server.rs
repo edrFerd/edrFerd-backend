@@ -6,10 +6,17 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use blake3::Hash as BlakeHash;
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::sync::oneshot::Receiver;
 use tower_http::cors::CorsLayer;
+
+#[derive(Debug, Deserialize)]
+pub struct BlockWithTime {
+    block: [i64; 3],
+    cost: u64,
+}
 
 async fn server() -> Result<()> {
     let cors = CorsLayer::very_permissive();
@@ -18,6 +25,7 @@ async fn server() -> Result<()> {
         .route("/test_send", get(test_send))
         .route("/show_world", get(show_world))
         .route("/send_block", post(send_block_from_web))
+        .route("/send_block_with_time", post(send_block_with_time))
         .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 1415));
@@ -70,6 +78,34 @@ pub async fn send_block_from_web(Json(block): Json<Block>) -> String {
         }
         Err(e) => {
             let error_msg = format!("发送共识包失败: {e:?}");
+            log::error!("{error_msg}");
+            error_msg
+        }
+    }
+}
+
+pub async fn send_block_with_time(Json(data): Json<BlockWithTime>) -> String {
+    info!("触发 send_block_with_time with data: {data:?}");
+    
+    // 根据指定的时间计算难度
+    // 这里需要根据实际的 POW 算法来计算合适的难度值
+    // 暂时使用一个简单的计算方式
+    let difficulty_data = format!("difficulty_for_{}ms", data.cost).into_bytes();
+    let difficult: BlakeHash = blake3::hash(&difficulty_data);
+    
+    let block = Block {
+        point: BlockPoint::new(data.block[0], data.block[1], data.block[2]),
+        block_appearance: BlockInfo::new("timed_block".to_string()),
+    };
+    
+    match send_explanation(block, difficult).await {
+        Ok(_) => {
+            let msg = format!("成功发送耗时 {} 毫秒的 POW 方块", data.cost);
+            info!("{msg}");
+            msg
+        }
+        Err(e) => {
+            let error_msg = format!("发送耗时 POW 方块失败: {e:?}");
             log::error!("{error_msg}");
             error_msg
         }
