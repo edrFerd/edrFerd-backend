@@ -96,6 +96,7 @@ pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Res
         }
     }
     // 发送
-    broadcast_by_udp(&the_chunk).await?;
+    let chunk = Chunk::new(the_chunk);
+    broadcast_by_udp(&chunk).await?;
     Ok(())
 }
