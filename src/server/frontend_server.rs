@@ -34,14 +34,18 @@ async fn server(event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>) -> anyhow:
 pub async fn tick_update_vec(
     State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<BlockUpdatePack>>>>,
 ) -> Json<Vec<BlockUpdatePack>> {
-    let events = {
+    Json({
         let mut buf = Vec::new();
-        while let Some(block) = recv.lock().await.recv().await {
-            buf.push(block);
+        let mut rec = recv.lock().await;
+        if rec.is_empty() || rec.is_closed() {
+            buf
+        } else {
+            while let Some(block) = rec.recv().await {
+                buf.push(block);
+            }
+            buf
         }
-        buf
-    };
-    events.into()
+    })
 }
 
 pub async fn known_world_state(
