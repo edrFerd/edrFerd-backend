@@ -1,5 +1,6 @@
 #![allow(unused)]
 use crate::apis::debug_server::web_main;
+use crate::apis::frontend_server::web_main as frontend_web_main;
 
 use log::info;
 use std::sync::{Arc, OnceLock};
@@ -53,6 +54,7 @@ async fn async_main_logic() -> anyhow::Result<()> {
     socket.set_broadcast(true);
     GLOBAL_SOCKET.get_or_init(move || Arc::new(socket));
     let (send, recv) = oneshot::channel();
+    let (frontend_send, frontend_recv) = oneshot::channel();
 
     // 创建数据处理channel
     let (chunk_sender, chunk_receiver) = mpsc::unbounded_channel();
@@ -64,19 +66,21 @@ async fn async_main_logic() -> anyhow::Result<()> {
     // 启动数据处理工作循环
     let work_handle = tokio::spawn(world::work::work_loop(chunk_receiver));
     log::info!("数据处理工作循环已启动");
-
     // 发送初始化信息
     core::send::send_init().await?;
 
-    // let waiter = tokio::spawn(libs::static_server::web_main(recv));
-    let waiter = tokio::spawn(web_main(recv));
+   
+    let debug_waiter = tokio::spawn(web_main(recv));
+    let frontend_waiter = tokio::spawn(frontend_web_main(frontend_recv));
     tokio::signal::ctrl_c().await.ok();
-    send.send(());
+    send.send(()).ok();
+    frontend_send.send(()).ok();
 
     // 优雅关闭各个任务
     receive_handle.abort();
     work_handle.abort();
-    waiter.await;
+    debug_waiter.await.ok();
+    frontend_waiter.await.ok();
 
     log::info!("服务关闭");
     Ok(())
