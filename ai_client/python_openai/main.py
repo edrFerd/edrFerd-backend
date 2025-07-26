@@ -43,7 +43,7 @@ def set_block(x: int, y: int, z: int, block_id: str):
             "x": x,
             "y": y,
             "z": z,
-            "info": {"block_id": block_id, "block_meta": {}},
+            "info": {"type_id": block_id}
         }
         response = requests.post(f"{FRONTEND_SERVER_URL}/set_block_once", json=payload)
         response.raise_for_status()
@@ -66,7 +66,7 @@ def remove_block(x: int, y: int, z: int):
 
 def add_declaration(key: str, value: str):
     """在 AI 的记忆中添加或更新一个声明。
-    用于 AI 记录自己的陈述或计划。
+    用于 AI 记住他声明了哪些计划。
     """
     print(f"正在添加声明: {key} = {value}")
     declarations[key] = value
