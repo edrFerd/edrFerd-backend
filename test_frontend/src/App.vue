@@ -109,6 +109,18 @@ async function callTestSend() {
     console.error('Error calling test_send:', error)
   }
 }
+
+async function getPubKey() {
+  try {
+    const response = await fetch('http://127.0.0.1:1416/pubkey');
+    const data = await response.text();
+    message.value = data;
+    console.log(data);
+  } catch (error) {
+    message.value = `Error: ${error.message}`;
+    console.error('Error calling get_pubkey:', error);
+  }
+}
 </script>
 
 <template>
@@ -118,6 +130,7 @@ async function callTestSend() {
     <div class="action-section">
       <h2>通用操作</h2>
       <button @click="callTestSend">发送一个默认共识包</button>
+      <button @click="getPubKey">获取公钥</button>
     </div>
 
     <div class="action-section">
