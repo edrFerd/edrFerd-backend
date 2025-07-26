@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::sync::atomic::AtomicBool;
+use std::sync::LazyLock;
 use std::time::Duration;
 
 use crate::chunk::{Chunk, ChunkData};
@@ -51,6 +52,24 @@ pub async fn broadcast_by_udp<T: serde::Serialize>(data: &T) -> anyhow::Result<(
         .send_to(msg.as_bytes(), ("255.255.255.255", PORT))
         .await?;
     Ok(())
+}
+
+pub async fn get_salt_from_injective() -> BlakeHash {
+    static DOWNLOAD_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+        reqwest::ClientBuilder::new().build().expect("faild to build reqwest client")
+    });
+    const INJECTIVE_URL: &str = "https://lcd.injective.network/cosmos/base/tendermint/v1beta1/blocks/latest";
+    let mut hasher = blake3::Hasher::new();
+    let str = match DOWNLOAD_CLIENT.get(INJECTIVE_URL).send().await {
+        Ok(d) => {
+            format!("{d:?}")
+        }
+        Err(e) => {
+            e.to_string()
+        }
+    };
+    hasher.update(str.as_bytes());
+    hasher.finalize()
 }
 
 /// 发送区块解释到网络。
