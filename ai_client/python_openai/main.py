@@ -1,81 +1,187 @@
 import openai
-import os
 import json
 import time
+import requests
+from datetime import datetime
 
-# --- OpenAI Client Setup ---
+# --- OpenAI 客户端设置 ---
 client = openai.OpenAI(
-    api_key="sk-iR4aQLl0390FOC404yXPBF54brpbbiQyIW7RY9QVWmmGUWMi",
+    api_key="sk-iR4aQLl0390FOC404yXPBF54brpbbiQyIW7RY9QVWmmGUWMi",  # 请替换为您的 API Key
     base_url="https://api.moonshot.cn/v1",
 )
 
-# --- Tool Definitions ---
-def get_current_weather(location, unit="celsius"):
-    """Get the current weather in a given location."""
-    print(f"Getting weather for {location} in {unit}...")
-    if "tokyo" in location.lower():
-        return json.dumps({"location": "Tokyo", "temperature": "10", "unit": "celsius"})
-    elif "san francisco" in location.lower():
-        return json.dumps({"location": "San Francisco", "temperature": "72", "unit": "fahrenheit"})
-    else:
-        return json.dumps({"location": location, "temperature": "22", "unit": "celsius"})
+# --- 游戏服务器 API 配置 ---
+FRONTEND_SERVER_URL = "http://localhost:1416"
 
-def get_stock_price(symbol: str):
-    """Get the current stock price for a given symbol."""
-    print(f"Getting stock price for {symbol}...")
-    if symbol.lower() == "msft":
-        return json.dumps({"symbol": "MSFT", "price": "300.00"})
-    elif symbol.lower() == "aapl":
-        return json.dumps({"symbol": "AAPL", "price": "150.00"})
-    else:
-        return json.dumps({"symbol": symbol, "price": "unknown"})
+# --- AI 状态 ---
+declarations = {}
+
+# --- 工具定义 ---
 
 
-# --- Main Loop ---
+def get_world_state():
+    """获取当前游戏世界的状态。返回所有方块的列表。
+    每个方块都是一个字典，包含 'point'（x, y, z 坐标）和 'info'（block_id 等信息）。
+    """
+    print("正在获取世界状态...")
+    try:
+        response = requests.get(f"{FRONTEND_SERVER_URL}/known_world_state")
+        response.raise_for_status()
+        return json.dumps(response.json())
+    except requests.exceptions.RequestException as e:
+        return json.dumps({"error": str(e)})
+
+
+def set_block(x: int, y: int, z: int, block_id: str):
+    """在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。
+    有效的 block_id 值包括：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。
+    """
+    print(f"正在坐标 ({x}, {y}, {z}) 放置方块 {block_id}...")
+    try:
+        payload = {
+            "duration": 100000,  # 根据 set_block_once 的逻辑，使用一个较长的持续时间
+            "x": x,
+            "y": y,
+            "z": z,
+            "info": {"block_id": block_id, "block_meta": {}},
+        }
+        response = requests.post(f"{FRONTEND_SERVER_URL}/set_block_once", json=payload)
+        response.raise_for_status()
+        return json.dumps({"status": "OK"})
+    except requests.exceptions.RequestException as e:
+        return json.dumps({"error": str(e)})
+
+
+def remove_block(x: int, y: int, z: int):
+    """移除给定坐标 (x, y, z) 的方块。"""
+    print(f"正在移除坐标 ({x}, {y}, {z}) 的方块...")
+    try:
+        payload = {"x": x, "y": y, "z": z}
+        response = requests.post(f"{FRONTEND_SERVER_URL}/remove_block", json=payload)
+        response.raise_for_status()
+        return json.dumps({"status": "OK"})
+    except requests.exceptions.RequestException as e:
+        return json.dumps({"error": str(e)})
+
+
+def add_declaration(key: str, value: str):
+    """在 AI 的记忆中添加或更新一个声明。
+    用于 AI 记录自己的陈述或计划。
+    """
+    print(f"正在添加声明: {key} = {value}")
+    declarations[key] = value
+    return json.dumps({"status": "OK", "declarations": declarations})
+
+
+def view_declarations():
+    """查看 AI 做出的所有当前声明。"""
+    print("正在查看声明...")
+    return json.dumps(declarations)
+
+
+# --- 主循环 ---
 def run_conversation():
-    messages = [{"role": "user", "content": "What's the weather like in San Francisco and Tokyo? Also, what's the stock price of MSFT?"}]
+    initial_prompt = (
+        "你是一个在3D方块世界中控制角色的AI代理。"
+        "你的目标是根据用户请求建造有趣的结构或修改世界。"
+        "你可以查看世界状态、放置方块和移除方块。"
+        "你还有一个“声明”字典来记住你的计划。"
+        "可用的方块类型有：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。"
+        "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
+    )
+    messages = [{"role": "user", "content": initial_prompt}]
     tools = [
         {
             "type": "function",
             "function": {
-                "name": "get_current_weather",
-                "description": "Get the current weather in a given location",
+                "name": "get_world_state",
+                "description": "获取当前游戏世界的状态。",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "set_block",
+                "description": "在给定的坐标 (x, y, z) 放置一个具有特定 block_id 的方块。",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "location": {
+                        "x": {"type": "integer"},
+                        "y": {"type": "integer"},
+                        "z": {"type": "integer"},
+                        "block_id": {
                             "type": "string",
-                            "description": "The city and state, e.g. San Francisco, CA",
+                            "enum": [
+                                "RED",
+                                "WHITE",
+                                "PURPLE",
+                                "YELLOW",
+                                "PINK",
+                                "ORANGE",
+                                "BLUE",
+                                "BROWN",
+                                "CYAN",
+                                "LIME",
+                                "MAGENTA",
+                                "GRAY",
+                                "LIGHT_GRAY",
+                                "LIGHT_BLUE",
+                                "GREEN",
+                                "BLACK",
+                                "air",
+                            ],
                         },
-                        "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
                     },
-                    "required": ["location"],
+                    "required": ["x", "y", "z", "block_id"],
                 },
             },
         },
         {
             "type": "function",
             "function": {
-                "name": "get_stock_price",
-                "description": "Get the current stock price for a given symbol",
+                "name": "remove_block",
+                "description": "移除给定坐标 (x, y, z) 的方块。",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "symbol": {
-                            "type": "string",
-                            "description": "The stock ticker symbol, e.g. MSFT for Microsoft",
-                        }
+                        "x": {"type": "integer"},
+                        "y": {"type": "integer"},
+                        "z": {"type": "integer"},
                     },
-                    "required": ["symbol"],
+                    "required": ["x", "y", "z"],
                 },
             },
-        }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_declaration",
+                "description": "在 AI 的记忆中添加或更新一个声明。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "string"},
+                        "value": {"type": "string"},
+                    },
+                    "required": ["key", "value"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "view_declarations",
+                "description": "查看 AI 做出的所有当前声明。",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        },
     ]
 
     while True:
-        print("\n--- New Conversation Iteration ---")
+        print("\n--- 新一轮对话 ---")
         response = client.chat.completions.create(
-            model="moonshot-v1-8k",
+            model="kimi-k2-0711-preview",
             messages=messages,
             tools=tools,
             tool_choice="auto",
@@ -84,10 +190,13 @@ def run_conversation():
         tool_calls = response_message.tool_calls
 
         if tool_calls:
-            print("Tool calls detected:", tool_calls)
+            print("检测到工具调用:", tool_calls)
             available_functions = {
-                "get_current_weather": get_current_weather,
-                "get_stock_price": get_stock_price,
+                "get_world_state": get_world_state,
+                "set_block": set_block,
+                "remove_block": remove_block,
+                "add_declaration": add_declaration,
+                "view_declarations": view_declarations,
             }
             messages.append(response_message)
 
@@ -104,20 +213,20 @@ def run_conversation():
                         "content": function_response,
                     }
                 )
-            
+
             second_response = client.chat.completions.create(
-                model="moonshot-v1-8k",
+                model="kimi-k2-0711-preview",  # 建议使用与之前相同的模型以保持一致性
                 messages=messages,
             )
-            print("Final response:", second_response.choices[0].message.content)
+            final_message = second_response.choices[0].message
+            print("最终回复:", final_message.content)
+            messages.append(final_message)
         else:
-            print("No tool calls. Final response:", response_message.content)
-            break # Exit loop if no tool calls are made
+            print("无工具调用。最终回复:", response_message.content)
+            messages.append(response_message)
+            user_input = input("\n请输入您的下一个指令: ")
+            messages.append({"role": "user", "content": user_input})
 
-        print("Waiting for 10 seconds before next loop...")
-        time.sleep(10)
-        # Reset messages for the next independent run, or modify logic as needed
-        messages = [messages[0]]
 
 if __name__ == "__main__":
     run_conversation()
