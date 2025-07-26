@@ -1,3 +1,4 @@
+use crate::core::send::send_explation_in_time;
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use crate::libs::key::get_key;
 use crate::server::FRONTEND_PORT;
@@ -10,14 +11,15 @@ use axum::{Json, Router};
 use log::{info, trace};
 use tokio::sync::{Mutex, mpsc, oneshot};
 use tower_http::cors::CorsLayer;
+use serde::Deserialize;
 
-use crate::world::work::BlockUpdatePack;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
+use crate::world::work::BlockUpdatePack;
 use crate::core::maintain::{MaintainBlock, add_new_maintain_block, remove_maintain_block};
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct SetBlockParams {
@@ -41,7 +43,8 @@ async fn server(event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>) -> anyhow:
         .route("/known_world_state", get(known_world_state))
         .route("/pubkey", get(get_pubkey))
         .route("/tick_update_vec", get(tick_update_vec))
-        .route("/set_block", post(set_block))
+        .route("/set_block", post(set_maintain_block))
+        .route("/set_block_once", post(set_block_once))
         .route("/remove_block", post(remove_block))
         .with_state(Arc::new(Mutex::new(event_recv)))
         .layer(cors);
@@ -87,12 +90,18 @@ pub async fn get_pubkey() -> Json<Vec<u8>> {
     Json(bytes.to_vec())
 }
 
-pub async fn set_block(Json(params): Json<SetBlockParams>) -> Json<&'static str> {
+pub async fn set_maintain_block(Json(params): Json<SetBlockParams>) -> Json<&'static str> {
     add_new_maintain_block(
         BlockPoint::new(params.x, params.y, params.z),
         MaintainBlock::new(params.duration, params.info),
     )
     .await;
+    Json("OK")
+}
+
+pub async fn set_block_once(Json(params): Json<SetBlockParams>) -> Json<&'static str> {
+    let block = Block::new(BlockPoint::new(params.x, params.y, params.z), params.info);
+    send_explation_in_time(block, Duration::from_millis(params.duration)).await;
     Json("OK")
 }
 
