@@ -1,4 +1,5 @@
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
+use crate::world::BlockWithPubKey;
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -20,10 +21,10 @@ async fn server() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn known_world_state() -> Json<Vec<Block>> {
+pub async fn known_world_state() -> Json<Vec<BlockWithPubKey>> {
     info!("触发 known_world_state");
     let world = crate::world::get_world().lock().await;
-    world.as_block().into()
+    world.as_block_with_pub_key().into()
 }
 
 pub async fn web_main(stop_receiver: Receiver<()>) -> Result<tokio::task::JoinHandle<Result<()>>> {

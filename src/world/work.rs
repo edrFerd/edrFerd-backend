@@ -123,7 +123,11 @@ async fn work(
             let appearance = &info_key.block_appearance;
             info!("Point {point:?} 最优方块外观: {appearance:?}, pow: {pow:?}");
             // 将更新后的方块写入到World中
-            world.set_block(point, BlockInfo::new(appearance.type_id.clone()));
+            world.set_block(
+                point,
+                BlockInfo::new(appearance.type_id.clone()),
+                info_key.pub_key,
+            );
         }
     }
     info!("完成本次工作循环的数据处理");

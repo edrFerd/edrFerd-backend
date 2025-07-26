@@ -8,9 +8,31 @@ use serde::Serialize;
 use std::sync::{LazyLock, OnceLock};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
-
+#[derive(Debug, Clone, Serialize)]
+pub struct BlockInfoWithPubKey {
+    block_info: BlockInfo,
+    pub_key: ed25519_dalek::VerifyingKey,
+}
+impl BlockInfoWithPubKey {
+    pub fn new(block_info: BlockInfo, pub_key: ed25519_dalek::VerifyingKey) -> Self {
+        Self {
+            block_info,
+            pub_key,
+        }
+    }
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct BlockWithPubKey {
+    block: Block,
+    pub_key: ed25519_dalek::VerifyingKey,
+}
+impl BlockWithPubKey {
+    pub fn new(block: Block, pub_key: ed25519_dalek::VerifyingKey) -> Self {
+        Self { block, pub_key }
+    }
+}
 /// 世界地图类型，键为 `BlockPoint`，值为 `BlockInfo`。
-type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfo>;
+type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfoWithPubKey>;
 
 /// 全局的世界结构，包含世界地图数据。
 #[derive(Debug, Clone, Serialize)]
@@ -36,16 +58,25 @@ impl World {
     /// 参数:
     /// - `block_point`: 方块的坐标点
     /// - `block_info`: 方块的相关信息
-    pub fn set_block(&mut self, block_point: BlockPoint, block_info: BlockInfo) {
+    pub fn set_block(
+        &mut self,
+        block_point: BlockPoint,
+        block_info: BlockInfo,
+        pub_key: ed25519_dalek::VerifyingKey,
+    ) {
         info!("已设置方块: 点 {:?}, 信息: {:?}", &block_point, &block_info);
-        self.world.insert(block_point, block_info);
+        self.world
+            .insert(block_point, BlockInfoWithPubKey::new(block_info, pub_key));
     }
-    pub fn as_block(&self) -> Vec<Block> {
+    pub fn as_block_with_pub_key(&self) -> Vec<BlockWithPubKey> {
         self.world
             .iter()
-            .map(|(point, block_info)| Block {
-                point: point.clone(),
-                block_info: block_info.clone(),
+            .map(|(block_point, block_info_with_pub_key)| {
+                let block = Block {
+                    point: block_point.clone(),
+                    block_info: block_info_with_pub_key.block_info.clone(),
+                };
+                BlockWithPubKey::new(block, block_info_with_pub_key.pub_key)
             })
             .collect()
     }

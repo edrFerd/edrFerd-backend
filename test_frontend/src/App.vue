@@ -143,7 +143,8 @@ async function callTestSend() {
       <div v-if="sortedWorldData.length > 0" class="world-display">
         <div v-for="block in sortedWorldData" :key="block.point" class="block-card">
           <p><strong>坐标:</strong> {{ block.point }}</p>
-          <p><strong>类型:</strong> {{ block.info.type_id }}</p>
+          <p><strong>类型:</strong> {{ block.info.block_info.type_id }}</p>
+          <p><strong>公钥:</strong> {{ block.info.pub_key }}</p>
         </div>
       </div>
     </div>

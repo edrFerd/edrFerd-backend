@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot::Receiver;
 use tower_http::cors::CorsLayer;
 
+use crate::world::BlockInfoWithPubKey;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -39,7 +40,7 @@ async fn debug_server() -> Result<()> {
     Ok(())
 }
 
-pub async fn show_world() -> Json<HashMap<String, BlockInfo>> {
+pub async fn show_world() -> Json<HashMap<String, BlockInfoWithPubKey>> {
     info!("触发 show_world");
     let world = crate::world::get_world().lock().await;
     let mut serializable_world = HashMap::new();
