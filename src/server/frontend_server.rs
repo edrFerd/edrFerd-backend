@@ -21,6 +21,7 @@ async fn server(event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>) -> anyhow:
     let app: Router = Router::new()
         .route("/known_world_state", get(known_world_state))
         .route("/pubkey", get(get_pubkey))
+        .route("/tick_update_vec", get(tick_update_vec))
         .with_state(Arc::new(Mutex::new(event_recv)))
         .layer(cors);
     let addr = SocketAddr::from(([0, 0, 0, 0], FRONTEND_PORT));

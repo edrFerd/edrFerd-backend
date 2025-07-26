@@ -15,6 +15,8 @@ use tokio::sync::mpsc;
 /// 工作的间隙，单位为毫秒
 /// 目前是20tick/s (50ms)
 const WORK_INTERVAL_MS: i64 = 50;
+
+#[derive(Clone, Debug)]
 pub struct BlockUpdatePack {
     block: BlockWithPubKey,
     timestamp: NaiveTime,
