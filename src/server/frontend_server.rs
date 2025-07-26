@@ -11,11 +11,12 @@ use log::info;
 use tokio::sync::{Mutex, mpsc, oneshot};
 use tower_http::cors::CorsLayer;
 
+use crate::world::work::BlockUpdatePack;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-async fn server(event_recv: mpsc::UnboundedReceiver<()>) -> anyhow::Result<()> {
+async fn server(event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>) -> anyhow::Result<()> {
     let cors = CorsLayer::very_permissive();
     let app: Router = Router::new()
         .route("/known_world_state", get(known_world_state))
@@ -29,20 +30,27 @@ async fn server(event_recv: mpsc::UnboundedReceiver<()>) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn tick_update_vec(State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<()>>>>) {
+pub async fn tick_update_vec(
+    State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<BlockUpdatePack>>>>,
+) -> Json<Vec<BlockUpdatePack>> {
     let events = {
         let mut buf = Vec::new();
-        while let Some(_) = recv.lock().await.recv().await {
-            buf.push(());
+        while let Some(block) = recv.lock().await.recv().await {
+            buf.push(block);
         }
         buf
     };
+    events.into()
+
 }
 
 pub async fn known_world_state(
-    State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<()>>>>,
+    State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<BlockUpdatePack>>>>,
 ) -> Json<Vec<BlockWithPubKey>> {
     info!("触发 known_world_state");
+    while let Some(block_update_pack) = recv.lock().await.recv().await {
+        drop(block_update_pack);
+    }
     let world = crate::world::get_world().lock().await;
     world.as_block_with_pub_key().into()
 }
@@ -56,7 +64,7 @@ pub async fn get_pubkey() -> Json<Vec<u8>> {
 
 pub async fn web_main(
     stop_receiver: oneshot::Receiver<()>,
-    event_recv: mpsc::UnboundedReceiver<()>,
+    event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>,
 ) -> Result<tokio::task::JoinHandle<Result<()>>> {
     let task = tokio::spawn(server(event_recv));
     stop_receiver.await?;

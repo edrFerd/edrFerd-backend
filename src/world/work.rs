@@ -1,11 +1,12 @@
 use crate::chunk::Chunk;
 use crate::core::receive::ChunkWithTime;
-use crate::libs::data_struct::{BlockInfo, BlockPoint};
-use crate::world::get_world;
+use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
+use crate::world::{BlockWithPubKey, get_world};
 use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use foldhash::HashMapExt;
 
+use chrono::NaiveTime;
 use log::{debug, info, trace, warn};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -14,13 +15,22 @@ use tokio::sync::mpsc;
 /// 工作的间隙，单位为毫秒
 /// 目前是20tick/s (50ms)
 const WORK_INTERVAL_MS: i64 = 50;
-
+pub struct BlockUpdatePack {
+    block: BlockWithPubKey,
+    timestamp: NaiveTime,
+}
+impl BlockUpdatePack {
+    pub fn new(block: BlockWithPubKey) -> Self {
+        let timestamp = chrono::Utc::now().time();
+        Self { block, timestamp }
+    }
+}
 /// 异步工作循环，按固定时间间隔执行任务。
 ///
 /// 每次循环会等待 `WORK_INTERVAL_MS` 毫秒后再继续。
 pub async fn work_loop(
     mut receiver: mpsc::UnboundedReceiver<ChunkWithTime>,
-    mut sender: mpsc::UnboundedSender<()>,
+    mut sender: mpsc::UnboundedSender<BlockUpdatePack>,
 ) {
     info!("启动工作循环，间隔: {WORK_INTERVAL_MS} 毫秒");
     let mut current_tick = chrono::Utc::now();
@@ -32,7 +42,7 @@ pub async fn work_loop(
         }
         last_tick = current_tick; // 移交上一次tick
         current_tick = chrono::Utc::now(); // 当前tick时间
-        work(buf, current_tick, last_tick).await;
+        work(buf, current_tick, last_tick, &sender).await;
         // 等待下一个循环间隔
         tokio::time::sleep(tokio::time::Duration::from_millis(WORK_INTERVAL_MS as u64)).await;
     }
@@ -88,6 +98,7 @@ async fn work(
     chunks: Vec<ChunkWithTime>,
     current_tick: chrono::DateTime<chrono::Utc>,
     last_tick: chrono::DateTime<chrono::Utc>,
+    sender: &mpsc::UnboundedSender<BlockUpdatePack>,
 ) {
     if (chunks.is_empty()) {
         return;
@@ -126,10 +137,17 @@ async fn work(
             info!("Point {point:?} 最优方块外观: {appearance:?}, pow: {pow:?}");
             // 将更新后的方块写入到World中
             world.set_block(
-                point,
+                point.clone(),
                 BlockInfo::new(appearance.type_id.clone()),
                 info_key.pub_key,
             );
+            // 将更新后的方块写入更新队列中
+            sender
+                .send(BlockUpdatePack::new(BlockWithPubKey::new(
+                    Block::new(point.clone(), BlockInfo::new(appearance.type_id.clone())),
+                    info_key.pub_key,
+                )))
+                .unwrap();
         }
     }
     info!("完成本次工作循环的数据处理");
