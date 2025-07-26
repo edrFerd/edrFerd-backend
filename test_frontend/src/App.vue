@@ -68,7 +68,16 @@ async function sendBlock() {
 
 async function sendBlockWithTime() {
   const data = {
-    block: [parseInt(blockX.value), parseInt(blockY.value), parseInt(blockZ.value)],
+    block: {
+      point: {
+        x: parseInt(blockX.value),
+        y: parseInt(blockY.value),
+        z: parseInt(blockZ.value),
+      },
+      block_appearance: {
+        type_id: blockType.value,
+      },
+    },
     cost: parseInt(blockTime.value)
   };
 

@@ -1,4 +1,4 @@
-use crate::core::send::send_explanation;
+use crate::core::send::{send_explanation, send_explation_in_time};
 use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use anyhow::Result;
 use axum::extract::Query;
@@ -9,12 +9,13 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::time::Duration;
 use tokio::sync::oneshot::Receiver;
 use tower_http::cors::CorsLayer;
 
 #[derive(Debug, Deserialize)]
 pub struct BlockWithTime {
-    block: [i64; 3],
+    block: Block,
     cost: u64,
 }
 
@@ -86,19 +87,12 @@ pub async fn send_block_from_web(Json(block): Json<Block>) -> String {
 
 pub async fn send_block_with_time(Json(data): Json<BlockWithTime>) -> String {
     info!("触发 send_block_with_time with data: {data:?}");
-    
+
     // 根据指定的时间计算难度
     // 这里需要根据实际的 POW 算法来计算合适的难度值
     // 暂时使用一个简单的计算方式
-    let difficulty_data = format!("difficulty_for_{}ms", data.cost).into_bytes();
-    let difficult: BlakeHash = blake3::hash(&difficulty_data);
-    
-    let block = Block {
-        point: BlockPoint::new(data.block[0], data.block[1], data.block[2]),
-        block_appearance: BlockInfo::new("timed_block".to_string()),
-    };
-    
-    match send_explanation(block, difficult).await {
+
+    match send_explation_in_time(data.block, Duration::from_millis(data.cost)).await {
         Ok(_) => {
             let msg = format!("成功发送耗时 {} 毫秒的 POW 方块", data.cost);
             info!("{msg}");
