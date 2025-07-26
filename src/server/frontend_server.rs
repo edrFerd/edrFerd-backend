@@ -40,7 +40,7 @@ pub async fn tick_update_vec(
         if rec.is_empty() || rec.is_closed() {
             buf
         } else {
-            while let Some(block) = rec.recv().await {
+            while let Ok(block) = rec.try_recv() {
                 buf.push(block);
             }
             buf

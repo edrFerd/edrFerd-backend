@@ -27,7 +27,7 @@ const sortedWorldData = computed(() => {
 
 async function showWorld() {
   try {
-    const response = await fetch('http://127.0.0.1:1415/show_world')
+    const response = await fetch('http://127.0.0.1:1417/show_world')
     const data = await response.json()
     worldData.value = data
     console.log(data)
@@ -50,7 +50,7 @@ async function sendBlock() {
   };
 
   try {
-    const response = await fetch('http://127.0.0.1:1415/send_block', {
+    const response = await fetch('http://127.0.0.1:1417/send_block', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ async function sendBlockWithTime() {
   };
 
   try {
-    const response = await fetch('http://127.0.0.1:1415/send_block_with_time', {
+    const response = await fetch('http://127.0.0.1:1417/send_block_with_time', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ async function sendBlockWithTime() {
 
 async function callTestSend() {
   try {
-    const response = await fetch('http://127.0.0.1:1415/test_send')
+    const response = await fetch('http://127.0.0.1:1417/test_send')
     const data = await response.text()
     message.value = data
     console.log(data)
