@@ -83,9 +83,10 @@ def view_declarations():
 def run_conversation():
     initial_prompt = (
         "你是一个在3D方块世界中控制角色的AI代理。"
-        "你的目标是根据用户请求建造有趣的结构或修改世界。"
+        "你的目标是自由修改世界，做出一些有意义的建筑"
         "你可以查看世界状态、放置方块和移除方块。"
         "你还有一个“声明”字典来记住你的计划。"
+        "注意，每个声明的创建都需要一定的算力作为代价。所以请不要选择太大的duraction"
         "可用的方块类型有：RED, WHITE, PURPLE, YELLOW, PINK, ORANGE, BLUE, BROWN, CYAN, LIME, MAGENTA, GRAY, LIGHT_GRAY, LIGHT_BLUE, GREEN, BLACK, air。"
         "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
     )
@@ -224,8 +225,7 @@ def run_conversation():
         else:
             print("无工具调用。最终回复:", response_message.content)
             messages.append(response_message)
-            user_input = input("\n请输入您的下一个指令: ")
-            messages.append({"role": "user", "content": user_input})
+            messages.append({"role": "user", "content": "请自行决定，我不会给你任何建议"})
 
 
 if __name__ == "__main__":
