@@ -1,7 +1,9 @@
 use blake3::Hash as BlakeHash;
 use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
+use std::hash::Hash;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::sync::LazyLock;
 use std::sync::atomic::AtomicBool;
@@ -74,6 +76,9 @@ pub async fn get_salt_from_injective() -> String {
     hasher.finalize().to_hex().to_string()
 }
 
+/// 上次的hash
+static LAST_HASH: Mutex<BlakeHash> = Mutex::const_new(BlakeHash::from_bytes([0_u8;32]));
+
 /// 发送区块解释到网络。
 ///
 /// 创建一个包含指定区块和难度的数据块，并通过广播发送到网络。
@@ -85,17 +90,19 @@ pub async fn get_salt_from_injective() -> String {
 /// 返回值：`anyhow::Result<()>` 发送结果
 pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Result<()> {
     let mut rand = 0_u64;
+    let last_hash = *LAST_HASH.lock().await;
     let salt = get_salt_from_injective().await;
     loop {
-        let one = ChunkData::new(difficult, block.clone(), salt.clone(), rand);
+        let one = ChunkData::new(last_hash, block.clone(), salt.clone(), rand);
         let hash = one.pow();
         if cmp_hash(&hash, &difficult).is_le() {
             break;
         }
         rand += 1;
     }
-    let chunk_data = ChunkData::new(difficult, block, "some aaaa".to_string(), rand);
+    let chunk_data = ChunkData::new(last_hash, block, "some aaaa".to_string(), rand);
     let chunk = Chunk::new(chunk_data);
+    *LAST_HASH.lock().await = chunk.pow;
     broadcast_by_udp(&chunk).await?;
     Ok(())
 }
@@ -103,7 +110,7 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
 pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Result<()> {
     let mut seed = 0_u64;
     let start_tick = std::time::Instant::now();
-    let last_hash = blake3::hash("nice hash".as_bytes());
+    let last_hash = *LAST_HASH.lock().await;
     let mut smallest: blake3::Hash = blake3::Hash::from_bytes([255; 32]);
     let salt = get_salt_from_injective().await;
     let mut the_chunk = ChunkData::new(last_hash, block.clone(), salt.clone(), seed);
@@ -120,6 +127,7 @@ pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Res
     }
     // 发送
     let chunk = Chunk::new(the_chunk);
+    *LAST_HASH.lock().await = chunk.pow;
     broadcast_by_udp(&chunk).await?;
     Ok(())
 }
