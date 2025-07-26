@@ -8,6 +8,7 @@ use foldhash::HashMapExt;
 
 use chrono::NaiveTime;
 use log::{debug, info, trace, warn};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
@@ -16,7 +17,7 @@ use tokio::sync::mpsc;
 /// 目前是20tick/s (50ms)
 const WORK_INTERVAL_MS: i64 = 50;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockUpdatePack {
     block: BlockWithPubKey,
     timestamp: NaiveTime,
