@@ -29,6 +29,8 @@ def get_world_state():
         print(f"响应状态码: {response.status_code}")
         response.raise_for_status()
         data = response.json()
+        for item in data:
+            item["pub_key"] = None
         print(f"获取到世界数据: {len(data) if isinstance(data, list) else '非列表类型'} 个元素")
         print(f"响应数据的前 200 个字符: {str(data)[:200]}...")
         return json.dumps(data)
@@ -46,7 +48,7 @@ def set_block(x: int, y: int, z: int, block_id: str, duration: int = 50):
     if duration > 50:
         duration = 50
         print(f"警告：duration 被限制为 50")
-    
+
 
     url = f"{FRONTEND_SERVER_URL}/set_block_once"
     payload = {
@@ -92,8 +94,8 @@ def remove_block(x: int, y: int, z: int):
 def run_conversation():
     initial_prompt = (
         "你是一个在3D方块世界中控制角色的AI代理。"
-        "你的目标是自由修改世界，做出一些有意义的建筑" 
-        "你可以查看世界状态、放置方块和移除方块。" 
+        "你的目标是自由修改世界，做出一些有意义的建筑"
+        "你可以查看世界状态、放置方块和移除方块。"
         "让我们先检查一下世界状态，然后你可以告诉我你的计划。"
     )
     messages = [{"role": "user", "content": initial_prompt}]
@@ -169,6 +171,7 @@ def run_conversation():
             messages=messages,
             tools=tools,
             tool_choice="auto",
+            temperature=1.0
         )
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
