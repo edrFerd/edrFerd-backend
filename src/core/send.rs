@@ -3,6 +3,7 @@ use ed25519_dalek::VerifyingKey;
 use serde::{Deserialize, Serialize};
 
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use crate::chunk::{Chunk, ChunkData};
@@ -29,6 +30,9 @@ impl InitBroadcast {
         }
     }
 }
+
+/// 是否在等待 pong
+pub static WAIT_PONG: AtomicBool = AtomicBool::new(true);
 
 pub async fn send_init() -> anyhow::Result<()> {
     let pack = InitBroadcast::new(false, PORT);
@@ -78,7 +82,7 @@ pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Res
     let mut seed = 0_u64;
     let start_tick = std::time::Instant::now();
     let last_hash = blake3::hash("nice hash".as_bytes());
-    let mut smallest: blake3::Hash = blake3::Hash::from_bytes([255;32]);
+    let mut smallest: blake3::Hash = blake3::Hash::from_bytes([255; 32]);
     let mut the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);
     loop {
         the_chunk = ChunkData::new(last_hash, block.clone(), "some aaaa".to_string(), seed);

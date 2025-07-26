@@ -1,4 +1,8 @@
-use std::{hash::Hash, io::Write, fmt::{Display, Formatter}};
+use std::{
+    fmt::{Display, Formatter},
+    hash::Hash,
+    io::Write,
+};
 
 #[allow(dead_code)]
 use crate::libs::key::get_key;
@@ -29,8 +33,8 @@ impl Display for BlockPoint {
 }
 
 impl BlockPoint {
-    pub fn new(x: i64, y: i64, z: i64) -> Self{
-        BlockPoint {x, y, z}
+    pub fn new(x: i64, y: i64, z: i64) -> Self {
+        BlockPoint { x, y, z }
     }
 }
 

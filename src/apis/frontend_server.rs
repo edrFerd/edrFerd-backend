@@ -1,4 +1,5 @@
 use crate::libs::data_struct::BlockInfo;
+use anyhow::Result;
 use axum::routing::get;
 use axum::{Json, Router};
 use log::info;
@@ -6,7 +7,6 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::sync::oneshot::Receiver;
 use tower_http::cors::CorsLayer;
-use anyhow::Result;
 
 async fn server() -> anyhow::Result<()> {
     let cors = CorsLayer::very_permissive();

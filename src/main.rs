@@ -69,7 +69,6 @@ async fn async_main_logic() -> anyhow::Result<()> {
     // 发送初始化信息
     core::send::send_init().await?;
 
-   
     let debug_waiter = tokio::spawn(web_main(recv));
     let frontend_waiter = tokio::spawn(frontend_web_main(frontend_recv));
     tokio::signal::ctrl_c().await.ok();

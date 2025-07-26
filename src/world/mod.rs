@@ -4,10 +4,10 @@ use crate::libs::data_struct::BlockInfo;
 use crate::libs::data_struct::BlockPoint;
 use foldhash::HashMapExt;
 use log::info;
+use serde::Serialize;
 use std::sync::{LazyLock, OnceLock};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
-use serde::Serialize;
 
 /// 世界地图类型，键为 `BlockPoint`，值为 `BlockInfo`。
 type WorldMapType = foldhash::HashMap<BlockPoint, BlockInfo>;

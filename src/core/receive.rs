@@ -1,13 +1,18 @@
 use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
+use crate::libs::key::get_key;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::borrow::Cow;
-use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::send::{broadcast_by_udp, InitBroadcast};
+use std::sync::OnceLock;
+use std::{borrow::Cow, net::SocketAddr};
+
+use crate::core::send::{InitBroadcast, broadcast_by_udp};
+
+use super::send::WAIT_PONG;
 
 pub struct ChunkWithTime {
     pub chunk: Chunk,
@@ -21,6 +26,12 @@ impl ChunkWithTime {
             time: chrono::Utc::now(),
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InitResponed {
+    pub host_port: u16,
+    pub listen_only: bool,
 }
 
 /// 监听 UDP 套接字并处理接收到的数据包。
@@ -51,7 +62,7 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
                 info!("从 {addr} 接收到数据: {received_data}");
-                process_pack(received_data.to_string()).await;
+                process_pack(received_data.to_string(), addr).await;
             }
             Err(e) => {
                 error!("接收到数据失败: {e}");
@@ -67,15 +78,35 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
 ///
 /// 参数：
 /// - `data`: 接收到的字符串数据
-async fn process_pack(data: String) -> anyhow::Result<()> {
-
+async fn process_pack(data: String, addr: SocketAddr) -> anyhow::Result<()> {
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
             if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
                 debug!("接收到数据块，准备处理");
                 process_chuck(c);
             } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
-                broadcast_by_udp(&json!(["pong"])).await?;
+                // 校验一下pub key不是自己的
+                let self_pub_key = get_key().verifying_key();
+                if c.pub_key != self_pub_key {
+                    broadcast_by_udp(&json!(["pong"])).await?;
+                } else {
+                    // 自己的广播，忽略
+                }
+            } else if let Ok(r) = serde_json::from_value::<InitResponed>(data.clone()) {
+                // 有人回应了
+                if WAIT_PONG.load(std::sync::atomic::Ordering::Relaxed) {
+                    // 不需要等待了
+                    WAIT_PONG.fetch_not(std::sync::atomic::Ordering::SeqCst);
+                    // 请求世界状态
+                    let url = {
+                        let mut url = addr;
+                        url.set_port(r.host_port);
+                        url.to_string()
+                    };
+                    reqwest::Client::new().post(url).send().await?;
+                } else {
+                    return Ok(());
+                }
             }
         }
         Err(e) => {
