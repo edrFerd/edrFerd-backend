@@ -7,7 +7,7 @@ use anyhow::Result;
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
-use log::info;
+use log::{info, trace};
 use tokio::sync::{Mutex, mpsc, oneshot};
 use tower_http::cors::CorsLayer;
 
@@ -52,8 +52,8 @@ pub async fn known_world_state(
     State(recv): State<Arc<Mutex<mpsc::UnboundedReceiver<BlockUpdatePack>>>>,
 ) -> Json<Vec<BlockWithPubKey>> {
     info!("触发 known_world_state");
-    while let Some(block_update_pack) = recv.lock().await.recv().await {
-        drop(block_update_pack);
+    while let Ok(block) = recv.lock().await.try_recv() {
+        drop(block);
     }
     let world = crate::world::get_world().lock().await;
     world.as_block_with_pub_key().into()
