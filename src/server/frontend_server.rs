@@ -5,7 +5,7 @@ use crate::world::BlockWithPubKey;
 
 use anyhow::Result;
 use axum::extract::State;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use log::{info, trace};
 use tokio::sync::{Mutex, mpsc, oneshot};
@@ -16,12 +16,32 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct SetBlockParams {
+    difficulty: i64,
+    x: i64,
+    y: i64,
+    z: i64,
+    target_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct RemoveBlockParams {
+    x: i64,
+    y: i64,
+    z: i64,
+}
+
 async fn server(event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>) -> anyhow::Result<()> {
     let cors = CorsLayer::very_permissive();
     let app: Router = Router::new()
         .route("/known_world_state", get(known_world_state))
         .route("/pubkey", get(get_pubkey))
         .route("/tick_update_vec", get(tick_update_vec))
+        .route("/set_block", post(set_block))
+        .route("/remove_block", post(remove_block))
         .with_state(Arc::new(Mutex::new(event_recv)))
         .layer(cors);
     let addr = SocketAddr::from(([0, 0, 0, 0], FRONTEND_PORT));
@@ -64,6 +84,14 @@ pub async fn get_pubkey() -> Json<Vec<u8>> {
     // 将公钥序列化为字节数组
     let bytes = get_key().verifying_key().to_bytes();
     Json(bytes.to_vec())
+}
+
+pub async fn set_block(Json(params): Json<SetBlockParams>) {
+    todo!()
+}
+
+pub async fn remove_block(Json(params): Json<RemoveBlockParams>) {
+    todo!()
 }
 
 pub async fn web_main(
