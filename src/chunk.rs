@@ -34,7 +34,7 @@ impl Chunk {
     ///
     /// 返回值：`bool` 签名是否有效
     pub fn verify_sign(&self) -> bool {
-        let key = self.data.pub_key.clone();
+        let key = self.data.pub_key;
         let hash = Self::hash_data_for_sign(&self.pow, &self.data);
         key.verify_strict(hash.as_bytes(), &self.sign)
             .ok()
