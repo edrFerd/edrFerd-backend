@@ -2,11 +2,12 @@ use crate::GLOBAL_SOCKET;
 use crate::chunk::Chunk;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
+use serde_json::json;
 use std::borrow::Cow;
 use std::sync::OnceLock;
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::send::InitBroadcast;
+use super::send::{broadcast_by_udp, InitBroadcast};
 
 pub struct ChunkWithTime {
     pub chunk: Chunk,
@@ -50,7 +51,7 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
                 };
                 let received_data = String::from_utf8_lossy(&buf[..len]);
                 info!("从 {addr} 接收到数据: {received_data}");
-                process_pack(received_data);
+                process_pack(received_data.to_string()).await;
             }
             Err(e) => {
                 error!("接收到数据失败: {e}");
@@ -66,19 +67,22 @@ pub async fn receive_loop(sender: UnboundedSender<ChunkWithTime>) -> anyhow::Res
 ///
 /// 参数：
 /// - `data`: 接收到的字符串数据
-fn process_pack(data: Cow<str>) {
+async fn process_pack(data: String) -> anyhow::Result<()> {
+
     match serde_json::from_str::<serde_json::Value>(&data) {
         Ok(data) => {
             if let Ok(c) = serde_json::from_value::<Chunk>(data.clone()) {
                 debug!("接收到数据块，准备处理");
                 process_chuck(c);
             } else if let Ok(c) = serde_json::from_value::<InitBroadcast>(data.clone()) {
+                broadcast_by_udp(&json!(["pong"])).await?;
             }
         }
         Err(e) => {
             warn!("a?,{e}");
         }
     }
+    Ok(())
 }
 
 static CHUNK_SENDER: OnceLock<UnboundedSender<ChunkWithTime>> = OnceLock::new();

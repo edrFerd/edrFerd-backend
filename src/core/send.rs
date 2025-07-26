@@ -33,12 +33,12 @@ impl InitBroadcast {
 pub async fn send_init() -> anyhow::Result<()> {
     let pack = InitBroadcast::new(false, PORT);
     log::info!("准备发送初始化信息");
-    send_by_udp(&pack).await?;
+    broadcast_by_udp(&pack).await?;
     log::info!("成功发送 init");
     Ok(())
 }
 
-pub async fn send_by_udp<T: serde::Serialize>(data: &T) -> anyhow::Result<()> {
+pub async fn broadcast_by_udp<T: serde::Serialize>(data: &T) -> anyhow::Result<()> {
     let socket = GLOBAL_SOCKET.get().unwrap();
     let msg = serde_json::to_string(data)?;
     socket.set_broadcast(true)?;
@@ -70,7 +70,7 @@ pub async fn send_explanation(block: Block, difficult: BlakeHash) -> anyhow::Res
     }
     let chunk_data = ChunkData::new(difficult, block, "some aaaa".to_string(), rand);
     let chunk = Chunk::new(chunk_data);
-    send_by_udp(&chunk).await?;
+    broadcast_by_udp(&chunk).await?;
     Ok(())
 }
 
@@ -92,6 +92,6 @@ pub async fn send_explation_in_time(block: Block, cost: Duration) -> anyhow::Res
         }
     }
     // 发送
-    send_by_udp(&the_chunk).await?;
+    broadcast_by_udp(&the_chunk).await?;
     Ok(())
 }
