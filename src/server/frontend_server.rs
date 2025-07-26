@@ -2,7 +2,7 @@ use crate::libs::data_struct::{Block, BlockInfo, BlockPoint};
 use crate::libs::key::get_key;
 use crate::server::FRONTEND_PORT;
 use crate::world::BlockWithPubKey;
-
+// 33550336
 use anyhow::Result;
 use axum::extract::State;
 use axum::routing::{get, post};
@@ -16,15 +16,16 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::core::maintain::{MaintainBlock, add_new_maintain_block, remove_maintain_block};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct SetBlockParams {
-    difficulty: i64,
+    duration: u64,
     x: i64,
     y: i64,
     z: i64,
-    target_id: String,
+    info: BlockInfo,
 }
 
 #[derive(Deserialize)]
@@ -87,13 +88,31 @@ pub async fn get_pubkey() -> Json<Vec<u8>> {
 }
 
 pub async fn set_block(Json(params): Json<SetBlockParams>) {
-    todo!()
+    add_new_maintain_block(
+        BlockPoint::new(params.x, params.y, params.z),
+        MaintainBlock::new(params.duration, params.info),
+    );
 }
+
 
 pub async fn remove_block(Json(params): Json<RemoveBlockParams>) {
-    todo!()
+    remove_maintain_block(BlockPoint::new(params.x, params.y, params.z)).await
 }
 
+
+/// 启动一个前端服务器，用于处理来自前端的请求和响应。
+///
+/// 该函数异步执行，返回一个任务句柄，以便在其他任务中等待该任务的完成。
+///
+/// 该函数会在 `stop_receiver` 中接收到值时自动停止。
+///
+/// # Errors
+///
+/// 如果 `stop_receiver` 关闭或发生其他错误，返回 `Err`。
+///
+/// # Panics
+///
+/// 如果 `event_recv` 关闭或发生其他错误， panic。
 pub async fn web_main(
     stop_receiver: oneshot::Receiver<()>,
     event_recv: mpsc::UnboundedReceiver<BlockUpdatePack>,

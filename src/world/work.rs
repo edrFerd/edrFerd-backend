@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
+use crate::core::maintain::maintain_send;
 
 /// 工作的间隙，单位为毫秒
 /// 目前是20tick/s (50ms)
@@ -45,9 +46,23 @@ pub async fn work_loop(
         }
         last_tick = current_tick; // 移交上一次tick
         current_tick = chrono::Utc::now(); // 当前tick时间
-        work(buf, current_tick, last_tick, &sender).await;
+        // 并发执行 work 和 maintain_send，非阻塞 await
+        let sender_clone = sender.clone();
+        let work_handle = tokio::spawn(work(buf, current_tick, last_tick, sender_clone));
+        let maintain_handle = tokio::spawn(maintain_send());
         // 等待下一个循环间隔
         tokio::time::sleep(tokio::time::Duration::from_millis(WORK_INTERVAL_MS as u64)).await;
+        // 超时后如果任务未完成则中止
+        if !work_handle.is_finished() {
+            work_handle.abort();
+        } else {
+            let _ = work_handle.await;
+        }
+        if !maintain_handle.is_finished() {
+            maintain_handle.abort();
+        } else {
+            let _ = maintain_handle.await;
+        }
     }
 }
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -101,7 +116,7 @@ async fn work(
     chunks: Vec<ChunkWithTime>,
     current_tick: chrono::DateTime<chrono::Utc>,
     last_tick: chrono::DateTime<chrono::Utc>,
-    sender: &mpsc::UnboundedSender<BlockUpdatePack>,
+    sender: mpsc::UnboundedSender<BlockUpdatePack>,
 ) {
     if (chunks.is_empty()) {
         return;
